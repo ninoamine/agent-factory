@@ -4,7 +4,7 @@ Status: `draft` (not ready to implement) | `ready` | `implemented`. Version: see
 
 | ID | File | Status | Version | depends_on | Modules |
 |---|---|---|---|---|---|
-| CFG | features/config-loading.md | ready | V1 | none | internal/app/configuration, internal/infra/storage |
+| CFG | features/config-loading.md | implemented | V1 | none | internal/app/configuration, internal/infra/storage |
 | META | features/metadata.md | ready | V1 | CFG | internal/app/metadata, internal/infra/providers |
 | STRAT | features/strategy-suggestion.md | ready | V1 | CFG, META | internal/app/strategies |
 | ROUTE | features/routing.md | ready | V1 | CFG | internal/app/routing, internal/domain |
