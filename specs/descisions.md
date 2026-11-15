@@ -15,6 +15,7 @@ Short entries. Check here before asking the user again. Status: `decided` | `pro
 | D-009 | `strategies.json` schema is finalized at implementation; shape in `common/config-files.md` is illustrative | decided |
 | D-010 | Language: Go (verify current stable at implementation). Stdlib-first (`encoding/json`, `log/slog`, `testing`). Single static binary. Replaces the earlier TypeScript stack | decided |
 | D-011 | Pi (pi.dev) is inspiration for UX only. No dependency on Pi packages. TUI library and provider approach (plain HTTP or official SDKs) are chosen by a prototype; Bubble Tea is a candidate | decided |
+| D-012 | Release on tag `v*`: build `linux/amd64` and `linux/arm64` static binaries, attach them plus checksums to a GitHub Release, embed the tag as version | proposed (user asked only that CI builds the CLI on tag creation) |
  
 ## Template for new entries
  
