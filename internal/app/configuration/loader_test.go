@@ -231,3 +231,19 @@ func TestCFG5Unreadable(t *testing.T) {
 		}
 	})
 }
+
+func TestAssignedCommands(t *testing.T) { // supports TUI-9
+	c := configuration.Config{Strategies: &configuration.StrategiesFile{Strategy: "cost", Commands: map[string]configuration.CommandAssignment{
+		"/fast":     {Enabled: true, Models: []string{"a", "b"}},
+		"/code":     {Enabled: false, Models: []string{"a"}},
+		"/reason":   {Enabled: true, Models: []string{"a"}},
+		"/creative": {Enabled: true, Models: []string{"b"}},
+	}}}
+	got := c.AssignedCommands("a")
+	if len(got) != 2 || got[0] != "/fast" || got[1] != "/reason" {
+		t.Fatalf("got %v", got)
+	}
+	if (configuration.Config{}).AssignedCommands("a") != nil {
+		t.Fatal("no strategies: want none")
+	}
+}

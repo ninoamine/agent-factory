@@ -16,6 +16,10 @@ Short entries. Check here before asking the user again. Status: `decided` | `pro
 | D-010 | Language: Go (verify current stable at implementation). Stdlib-first (`encoding/json`, `log/slog`, `testing`). Single static binary. Replaces the earlier TypeScript stack | decided |
 | D-011 | Pi (pi.dev) is inspiration for UX only. No dependency on Pi packages. TUI library and provider approach (plain HTTP or official SDKs) are chosen by a prototype; Bubble Tea is a candidate | decided |
 | D-012 | Release on tag `v*`: build `linux/amd64` and `linux/arm64` static binaries, attach them plus checksums to a GitHub Release, embed the tag as version | decided (user asked only that CI builds the CLI on tag creation) |
+| D-013 | Exit keys: Ctrl+C while idle exits, Ctrl+D on empty input exits. No `/quit` command | decided |
+| D-014 | While a request runs, read-only tool commands run; a second routing request, `/refresh` and `/history delete`/`clear` are refused | decided |
+| D-015 | Startup: the screen opens first and shows loading; config and metadata results appear in the output area when ready | decided |
+| D-016 | TUI library is Bubble Tea. The user waived the prototype required by DEP-3; no prototype is built. Copy-paste of the `/suggest` JSON (TUI-23) is checked at implementation | decided |
  
 ## Template for new entries
  
