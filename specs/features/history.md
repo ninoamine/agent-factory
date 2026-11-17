@@ -1,6 +1,6 @@
 ---
 id: HIST
-status: ready
+status: implemented
 version: V1
 depends_on: [EXEC]
 modules: [internal/app/history, internal/infra/storage]
