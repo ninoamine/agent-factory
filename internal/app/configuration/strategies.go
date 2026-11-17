@@ -3,10 +3,19 @@ package configuration
 import (
 	"fmt"
 	"sort"
+
+	"github.com/ninoamine/agent-factory/internal/domain"
 )
 
 // RoutingCommands are the valid keys of strategies.json "commands".
-var RoutingCommands = []string{"/fast", "/code", "/reason", "/creative"}
+// Derived from the domain list so there is a single source (ROUTE-1).
+var RoutingCommands = func() []string {
+	out := make([]string, len(domain.RoutingCommands))
+	for i, c := range domain.RoutingCommands {
+		out[i] = string(c)
+	}
+	return out
+}()
 
 var validStrategies = map[string]bool{"cost": true, "speed": true, "capability": true}
 
