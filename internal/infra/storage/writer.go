@@ -13,13 +13,20 @@ type Writer struct{}
 
 var userOwned = map[string]bool{"models.json": true, "strategies.json": true}
 
+func checkNotUserOwned(path string) error {
+	if userOwned[filepath.Base(path)] {
+		return fmt.Errorf("refusing to write %s: the file is owned by the user", path)
+	}
+	return nil
+}
+
 // WriteAtomic writes data to a temp file in the same directory, then renames it.
 func (Writer) WriteAtomic(ctx context.Context, path string, data []byte) error {
 	if err := ctx.Err(); err != nil {
 		return err
 	}
-	if userOwned[filepath.Base(path)] {
-		return fmt.Errorf("refusing to write %s: the file is owned by the user", path)
+	if err := checkNotUserOwned(path); err != nil {
+		return err
 	}
 	tmp, err := os.CreateTemp(filepath.Dir(path), filepath.Base(path)+".tmp-*")
 	if err != nil {
