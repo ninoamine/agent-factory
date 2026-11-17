@@ -5,6 +5,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/ninoamine/agent-factory/internal/app/execution"
 	"github.com/ninoamine/agent-factory/internal/app/metadata"
 	"github.com/ninoamine/agent-factory/internal/infra/providers"
 )
@@ -30,4 +31,21 @@ func TestMETA2Registry(t *testing.T) {
 			t.Fatalf("err = %v", err)
 		}
 	})
+}
+
+type fakeExec struct{}
+
+func (fakeExec) Execute(context.Context, string, string) (execution.Response, error) {
+	return execution.Response{}, nil
+}
+
+func TestEXEC1_RegistryResolvesExecutorByProvider(t *testing.T) {
+	r := providers.NewRegistry()
+	r.RegisterExecutor("p", fakeExec{})
+	if _, ok := r.Executor("p"); !ok {
+		t.Fatal("registered executor not found")
+	}
+	if _, ok := r.Executor("other"); ok {
+		t.Fatal("unregistered provider must not resolve")
+	}
 }
