@@ -491,3 +491,36 @@ func TestReviewFixes2(t *testing.T) {
 		}
 	})
 }
+
+func TestREFRESH2_RegeneratorAdapter(t *testing.T) {
+	dir := t.TempDir()
+	c := cfg(dir, configuration.ModelEntry{ID: "p/a", Provider: "p"}, configuration.ModelEntry{ID: "p/b", Provider: "p"})
+	f := fakeFetcher{
+		data: map[string]metadata.APIMetadata{"p/a": {Speed: "fast"}},
+		errs: map[string]error{"p/b": errors.New("boom")},
+	}
+	t.Run("REFRESH-2 regenerates the file through the adapter", func(t *testing.T) {
+		if _, err := svc(f).Regenerator()(context.Background(), c); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := os.Stat(filepath.Join(dir, configuration.MetadataFileName)); err != nil {
+			t.Fatalf("models-metadata.json not written: %v", err)
+		}
+	})
+	t.Run("REFRESH-5 a fetch failure is a warning, not an error", func(t *testing.T) {
+		warns, err := svc(f).Regenerator()(context.Background(), c)
+		if err != nil {
+			t.Fatalf("fetch failure must not fail the refresh: %v", err)
+		}
+		if len(warns) == 0 || !strings.Contains(strings.Join(warns, " "), "p/b") {
+			t.Errorf("warnings: %v", warns)
+		}
+	})
+	t.Run("REFRESH-3 a cancelled context returns an error", func(t *testing.T) {
+		ctx, cancel := context.WithCancel(context.Background())
+		cancel()
+		if _, err := svc(f).Regenerator()(ctx, c); err == nil {
+			t.Fatal("expected error")
+		}
+	})
+}

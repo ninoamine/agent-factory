@@ -167,6 +167,19 @@ func (s Service) Generate(ctx context.Context, cfg configuration.Config) (Result
 	return res, nil
 }
 
+// Regenerator adapts Generate to configuration.MetadataRegenerator for
+// /refresh (REFRESH-2). Fetch failures come back as warnings (META-8,
+// REFRESH-5); only a write failure or cancellation is an error.
+func (s Service) Regenerator() configuration.MetadataRegenerator {
+	return func(ctx context.Context, cfg configuration.Config) ([]string, error) {
+		res, err := s.Generate(ctx, cfg)
+		if err != nil {
+			return nil, err
+		}
+		return res.Warnings, nil
+	}
+}
+
 // apiFor fetches API metadata for one model, falling back to the last known
 // API metadata on failure (META-8).
 func (s Service) apiFor(ctx context.Context, cfg configuration.Config, m configuration.ModelEntry, prev APIMetadata) (APIMetadata, []string) {
