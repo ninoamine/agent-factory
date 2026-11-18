@@ -13,14 +13,29 @@ type ModelsFile struct {
 
 // ProviderEntry holds provider settings. APIKey must never be printed (SEC-1).
 type ProviderEntry struct {
-	APIKey string `json:"apiKey"`
+	Type           string `json:"type"`                     // PROV-1
+	BaseURL        string `json:"baseUrl,omitempty"`        // PROV-2, PROV-3
+	APIKey         string `json:"apiKey"`                   // PROV-4
+	TimeoutSeconds *int   `json:"timeoutSeconds,omitempty"` // PROV-7
 }
 
 // ModelEntry is one user-declared model.
 type ModelEntry struct {
-	ID       string        `json:"id"`
-	Provider string        `json:"provider"`
-	Metadata *UserMetadata `json:"metadata,omitempty"`
+	ID       string `json:"id"`
+	Provider string `json:"provider"`
+	// Model is the exact name sent to the provider API; the id when absent (PROV-8).
+	Model *string `json:"model,omitempty"`
+	// MaxOutputTokens limits the answer length when set (PROV-9).
+	MaxOutputTokens *int          `json:"maxOutputTokens,omitempty"`
+	Metadata        *UserMetadata `json:"metadata,omitempty"`
+}
+
+// APIName returns the model name sent to the provider API (PROV-8).
+func (m ModelEntry) APIName() string {
+	if m.Model != nil {
+		return *m.Model
+	}
+	return m.ID
 }
 
 // UserMetadata is optional; every field may be missing (CFG-9).
@@ -65,6 +80,7 @@ func (m *ModelsFile) Validate() []FieldError {
 		if name == "" {
 			errs = append(errs, FieldError{"providers", "provider name must not be empty"})
 		}
+		errs = append(errs, m.Providers[name].validate("providers."+name)...)
 	}
 	seen := map[string]bool{}
 	for i, md := range m.Models {
@@ -75,6 +91,12 @@ func (m *ModelsFile) Validate() []FieldError {
 			errs = append(errs, FieldError{p + ".id", fmt.Sprintf("duplicate model id %q", md.ID)})
 		}
 		seen[md.ID] = true
+		if md.Model != nil && *md.Model == "" {
+			errs = append(errs, FieldError{p + ".model", "must not be empty when set"})
+		}
+		if md.MaxOutputTokens != nil && *md.MaxOutputTokens <= 0 {
+			errs = append(errs, FieldError{p + ".maxOutputTokens", "must be a positive integer"})
+		}
 		if md.Metadata != nil {
 			if r := md.Metadata.Pricing.Validate(); r != "" {
 				errs = append(errs, FieldError{p + ".metadata.pricing", r})

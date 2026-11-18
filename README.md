@@ -46,6 +46,35 @@ Tool commands:
 
 Keys: Enter sends, PgUp/PgDn scroll, Ctrl+C cancels a running request (or exits when idle), Ctrl+D on an empty input exits.
 
-## Current limitations
+## Providers
 
-No provider adapters are built in yet, so a request to a model reports `model_unavailable`.
+Each provider in `models.json` needs a `type`. Three are built in:
+
+| `type` | Talks to | Default `baseUrl` |
+|---|---|---|
+| `anthropic` | Anthropic Messages API | `https://api.anthropic.com` |
+| `openai` | any OpenAI-compatible `/chat/completions` server (OpenAI, OpenRouter, Groq, Mistral, DeepSeek, vLLM, LM Studio, ...) | `https://api.openai.com/v1` |
+| `ollama` | Ollama native API | `http://localhost:11434` |
+
+```json
+{
+  "providers": {
+    "anthropic":  { "type": "anthropic", "apiKey": "<your key>" },
+    "openrouter": { "type": "openai", "baseUrl": "https://openrouter.ai/api/v1", "apiKey": "<your key>" },
+    "local":      { "type": "ollama", "timeoutSeconds": 300 }
+  },
+  "models": [
+    { "id": "or/sonnet", "provider": "openrouter", "model": "anthropic/claude-sonnet-5-5" },
+    { "id": "qwen", "provider": "local", "model": "qwen3:32b", "maxOutputTokens": 4096 }
+  ]
+}
+```
+
+Provider fields: `type` (required), `baseUrl`, `apiKey` (optional; local servers need none), `timeoutSeconds` (1 to 3600, default 60: how long the tool waits for the first byte and between streamed pieces; there is no limit on the total length).
+Model fields: `id` (what you put in `strategies.json`), `provider`, `model` (the exact name sent to the provider; defaults to `id`), `maxOutputTokens` (sent when set; Anthropic defaults to 8192).
+
+Failures are shown with the provider name and a reason (rejected key, unknown model, rate limit, unreachable, no response). The tool never retries and never switches to another model.
+
+## Upgrading
+
+`type` is now required on every provider in `models.json`. Add it, then run `/refresh`.

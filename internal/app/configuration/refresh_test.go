@@ -12,7 +12,7 @@ import (
 	"github.com/ninoamine/agent-factory/internal/infra/storage"
 )
 
-const otherModels = `{"providers":{"p":{"apiKey":"sk-SECRET-123"}},"models":[{"id":"p/x","provider":"p"},{"id":"p/y","provider":"p"}]}`
+const otherModels = `{"providers":{"p":{"type":"openai","apiKey":"sk-SECRET-123"}},"models":[{"id":"p/x","provider":"p"},{"id":"p/y","provider":"p"}]}`
 const otherStrat = `{"strategy":"cost","commands":{"/fast":{"enabled":true,"models":["p/y"]}}}`
 
 func newManager(t *testing.T, regen configuration.MetadataRegenerator) (*configuration.Manager, string) {
