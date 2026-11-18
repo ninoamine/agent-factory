@@ -13,15 +13,15 @@ Directory: `$AGENT_FACTORY_HOME` if set, else `~/.agent-factory/`.
 - FILE-2 Atomic write = write temp file in same dir, then rename.
 - FILE-3 `models-metadata.json` and `history.jsonl` never contain API keys.
 
-## Illustrative shapes (final schemas decided at implementation, D-009)
+## Illustrative shapes (final schemas decided at implementation, D-009; provider and model fields: PROV-1..9)
 
 `models.json`
 
 ```json
 {
-  "providers": { "provider-a": { "apiKey": "sk-..." } },
+  "providers": { "provider-a": { "type": "openai", "baseUrl": "https://api.example.com/v1", "apiKey": "sk-..." } },
   "models": [
-    { "id": "provider-a/model-x", "provider": "provider-a",
+    { "id": "provider-a/model-x", "provider": "provider-a", "model": "model-x",
       "metadata": { "capabilities": ["code"], "speed": "fast" } }
   ]
 }

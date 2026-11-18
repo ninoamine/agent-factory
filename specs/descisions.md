@@ -20,6 +20,10 @@ Short entries. Check here before asking the user again. Status: `decided` | `pro
 | D-014 | While a request runs, read-only tool commands run; a second routing request, `/refresh` and `/history delete`/`clear` are refused | decided |
 | D-015 | Startup: the screen opens first and shows loading; config and metadata results appear in the output area when ready | decided |
 | D-016 | TUI library is Bubble Tea. The user waived the prototype required by DEP-3; no prototype is built. Copy-paste of the `/suggest` JSON (TUI-23) is checked at implementation | decided |
+| D-017 | Provider adapters use plain `net/http`, no provider SDKs. The user waived the DEP-3 prototype (as in D-016) | decided |
+| D-018 | 429, 5xx, timeouts and network errors map to the existing `provider_failure` kind with a readable reason; no new error kinds (PROV-28) | decided |
+| D-019 | Each provider in `models.json` declares a required `type` (`anthropic`, `openai`, `ollama`) and optional `baseUrl`, `timeoutSeconds`; each model may set `model` (API name) and `maxOutputTokens`. Anthropic `max_tokens` defaults to 8192 | decided |
+| D-020 | Request timeouts are idle timeouts (60s to first byte, 60s between chunks), overridable per provider; no total cap. OpenAI-compatible requests always ask for streamed usage, with no resend if refused | decided |
  
 ## Template for new entries
  

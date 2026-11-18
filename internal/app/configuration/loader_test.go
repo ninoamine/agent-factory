@@ -12,7 +12,7 @@ import (
 	"github.com/ninoamine/agent-factory/internal/infra/storage"
 )
 
-const goodModels = `{"providers":{"p":{"apiKey":"sk-SECRET-123"}},"models":[{"id":"p/x","provider":"p"}]}`
+const goodModels = `{"providers":{"p":{"type":"openai","apiKey":"sk-SECRET-123"}},"models":[{"id":"p/x","provider":"p"}]}`
 const goodStrat = `{"strategy":"capability","commands":{"/fast":{"enabled":true,"models":["p/x"]}}}`
 
 func write(t *testing.T, dir, name, content string, mode os.FileMode) {
@@ -91,9 +91,9 @@ func TestCFG5Validation(t *testing.T) {
 		{"malformed json", "models.json", `{"providers":`, "$"},
 		{"unknown field", "models.json", `{"providers":{},"models":[],"extra":1}`, "extra"},
 		{"wrong type", "models.json", `{"providers":{},"models":"x"}`, "models"},
-		{"empty id", "models.json", `{"providers":{"p":{"apiKey":"k"}},"models":[{"id":"","provider":"p"}]}`, "models[0].id"},
+		{"empty id", "models.json", `{"providers":{"p":{"type":"openai","apiKey":"k"}},"models":[{"id":"","provider":"p"}]}`, "models[0].id"},
 		{"unknown provider", "models.json", `{"providers":{},"models":[{"id":"a","provider":"p"}]}`, "models[0].provider"},
-		{"duplicate id", "models.json", `{"providers":{"p":{"apiKey":"k"}},"models":[{"id":"a","provider":"p"},{"id":"a","provider":"p"}]}`, "models[1].id"},
+		{"duplicate id", "models.json", `{"providers":{"p":{"type":"openai","apiKey":"k"}},"models":[{"id":"a","provider":"p"},{"id":"a","provider":"p"}]}`, "models[1].id"},
 		{"bad strategy", "strategies.json", `{"strategy":"magic","commands":{}}`, "strategy"},
 		{"unknown command", "strategies.json", `{"strategy":"cost","commands":{"/nope":{"enabled":true,"models":[]}}}`, "commands./nope"},
 		{"two models on one command", "strategies.json", `{"strategy":"cost","commands":{"/fast":{"enabled":true,"models":["a","b"]}}}`, "commands./fast.models"},

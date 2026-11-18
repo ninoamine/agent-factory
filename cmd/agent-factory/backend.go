@@ -24,6 +24,8 @@ type backend struct {
 	exec     execution.Service
 	history  *history.Service
 	suggest  strategies.Service
+	// registry builds the provider adapters from a configuration (PROV-10); may be nil in tests.
+	registry interface{ Configure(configuration.Config) }
 
 	manager *configuration.Manager
 }
@@ -35,6 +37,7 @@ func (b *backend) Load(ctx context.Context) (cli.Startup, error) {
 	if err != nil {
 		return cli.Startup{}, err
 	}
+	b.configure(res.Config)
 	s := cli.Startup{Warnings: res.Warnings, Problems: res.Problems, Summary: res.Config.Summary()}
 	mres, _, err := b.metadata.GenerateIfAbsent(ctx, res.Config)
 	if err != nil {
@@ -42,8 +45,29 @@ func (b *backend) Load(ctx context.Context) (cli.Startup, error) {
 	} else {
 		s.MetadataWarnings = append(s.MetadataWarnings, mres.Warnings...)
 	}
-	b.manager = configuration.NewManager(b.reader, b.metadata.Regenerator(), res.Config)
+	b.manager = configuration.NewManager(b.reader, b.regenerator(), res.Config)
 	return s, nil
+}
+
+func (b *backend) configure(cfg configuration.Config) {
+	if b.registry != nil {
+		b.registry.Configure(cfg)
+	}
+}
+
+// regenerator builds the adapters of the new configuration before metadata is
+// fetched with them (PROV-10). If regeneration fails, the previous
+// configuration stays active, so its adapters are restored (REFRESH-3).
+func (b *backend) regenerator() configuration.MetadataRegenerator {
+	regen := b.metadata.Regenerator()
+	return func(ctx context.Context, cfg configuration.Config) ([]string, error) {
+		b.configure(cfg)
+		warns, err := regen(ctx, cfg)
+		if err != nil {
+			b.configure(b.manager.Active())
+		}
+		return warns, err
+	}
 }
 
 func (b *backend) Config() configuration.Config { return b.manager.Active() }

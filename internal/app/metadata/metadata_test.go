@@ -388,7 +388,7 @@ func TestEdgeCases(t *testing.T) {
 	t.Run("META-7 generation never modifies models.json or strategies.json (ARCH-7)", func(t *testing.T) {
 		dir := t.TempDir()
 		files := map[string]string{
-			"models.json":     `{"providers":{"p":{"apiKey":"` + key + `"}},"models":[{"id":"p/a","provider":"p"}]}`,
+			"models.json":     `{"providers":{"p":{"type":"openai","apiKey":"` + key + `"}},"models":[{"id":"p/a","provider":"p"}]}`,
 			"strategies.json": `{"strategy":"cost","commands":{}}`,
 		}
 		for n, c := range files {

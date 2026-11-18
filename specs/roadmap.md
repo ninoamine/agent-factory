@@ -4,7 +4,7 @@ Only the current version is buildable. Everything else needs a product decision 
 
 ## V1 (current)
 
-Interactive Linux TUI that routes each request to exactly one configured model via an explicit routing command. Features: CFG, META, STRAT, ROUTE, EXEC, HIST, REFRESH, TUI.
+Interactive Linux TUI that routes each request to exactly one configured model via an explicit routing command. Features: CFG, META, STRAT, ROUTE, EXEC, HIST, REFRESH, TUI, PROV. PROV (built-in Anthropic, OpenAI-compatible and Ollama adapters) is the V1 release gate.
 
 ## Not in V1 (do not build)
 

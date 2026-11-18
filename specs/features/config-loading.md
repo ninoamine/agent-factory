@@ -24,7 +24,7 @@ Goal: locate, check, and validate the user's files at startup without ever modif
 
 ## Clarifications
 
-- CFG-5 checks: `models.json` rejects empty or duplicate model ids and models naming an undeclared provider; `strategies.json` requires `strategy` in `cost|speed|capability`, command keys in `/fast|/code|/reason|/creative`, no empty model id, and at most one model per command (D-004).
+- CFG-5 checks: `models.json` rejects empty or duplicate model ids and models naming an undeclared provider; `strategies.json` requires `strategy` in `cost|speed|capability`, command keys in `/fast|/code|/reason|/creative`, no empty model id, and at most one model per command (D-004). Provider and model entry fields added by PROV (`type`, `baseUrl`, `timeoutSeconds`, `model`, `maxOutputTokens`) are validated as PROV-1..9 state.
 - CFG-5 also covers a file that exists but cannot be read: reported as a problem (path `$`), never a crash. Only context cancellation returns an error.
 - CFG-8 warns when any group or other permission bit is set.
 - CFG-10: one unknown model in an assignment makes that command unusable.

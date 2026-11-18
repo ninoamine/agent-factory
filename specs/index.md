@@ -12,7 +12,8 @@ Status: `draft` (not ready to implement) | `ready` | `implemented`. Version: see
 | HIST | features/history.md | implemented | V1 | EXEC | internal/app/history, internal/infra/storage |
 | REFRESH | features/refresh.md | implemented | V1 | CFG, META | internal/app/configuration |
 | TUI | features/tui.md | implemented | V1 | all | cmd/agent-factory, internal/cli |
+| PROV | features/provider-adapters.md | implemented | V1 | CFG, META, EXEC | internal/infra/providers, internal/app/configuration, cmd/agent-factory |
 
 Common (read for every task): `common/project.md`, `common/architecture.md`, `common/conventions.md`. File ownership: `common/config-files.md`.
 
-Suggested implementation order: Go scaffold, spike TUI/provider prototype, CFG, META, ROUTE, EXEC, HIST, STRAT, REFRESH, TUI.
+Suggested implementation order: Go scaffold, spike TUI/provider prototype, CFG, META, ROUTE, EXEC, HIST, STRAT, REFRESH, TUI, PROV.

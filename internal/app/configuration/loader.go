@@ -103,6 +103,7 @@ func Load(ctx context.Context, r FileReader, dir string) (Result, error) {
 		if !collect(&res, ModelsFileName, decodeStrict(modelsData, &m)) &&
 			!collect(&res, ModelsFileName, m.Validate()) {
 			res.Config.Models = &m
+			res.Warnings = append(res.Warnings, m.providerWarnings()...) // PROV-5, PROV-6
 		}
 		if mode, err := r.Mode(ctx, modelsPath); err == nil && mode&0o077 != 0 {
 			res.Warnings = append(res.Warnings, fmt.Sprintf(

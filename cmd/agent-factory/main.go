@@ -38,11 +38,13 @@ func run() error {
 		return err
 	}
 	files, writer := storage.Files{}, storage.Writer{}
-	registry := providers.NewRegistry() // provider adapters are registered here
+	registry := providers.NewRegistry() // adapters are built from the configuration (PROV-10)
+	registry.Version = version
 	hist := &history.Service{Store: storage.HistoryFile{Path: filepath.Join(dir, "history.jsonl"), Writer: writer}}
 
 	b := &backend{
 		dir:      dir,
+		registry: registry,
 		reader:   files,
 		metadata: metadata.Service{Reader: files, Writer: writer, Fetcher: registry},
 		exec:     execution.Service{Providers: registry, History: hist},
