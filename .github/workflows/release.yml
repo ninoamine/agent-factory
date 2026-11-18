@@ -22,13 +22,18 @@ jobs:
       - name: Build
         run: |
           mkdir dist
-          for arch in amd64 arm64; do
-            CGO_ENABLED=0 GOOS=linux GOARCH=$arch go build \
+          for target in linux/amd64 linux/arm64 darwin/amd64 darwin/arm64 windows/amd64; do
+            os=${target%/*}; arch=${target#*/}
+            ext=""; [ "$os" = windows ] && ext=".exe"
+            CGO_ENABLED=0 GOOS=$os GOARCH=$arch go build \
               -ldflags "-X main.version=${GITHUB_REF_NAME}" \
-              -o dist/agent-factory-linux-$arch ./cmd/agent-factory
+              -o dist/agent-factory-$os-$arch$ext ./cmd/agent-factory
           done
-          (cd dist && sha256sum agent-factory-linux-* > checksums.txt)
+          (cd dist && sha256sum agent-factory-* > checksums.txt)
       - name: Publish release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release create "$GITHUB_REF_NAME" dist/* --title "$GITHUB_REF_NAME" --generate-notes
+        run: |
+          flags=""
+          case "$GITHUB_REF_NAME" in *-*) flags="--prerelease" ;; esac
+          gh release create "$GITHUB_REF_NAME" dist/* --title "$GITHUB_REF_NAME" --generate-notes $flags

@@ -12,7 +12,7 @@ CGO_ENABLED=0 go build -o agent-factory ./cmd/agent-factory
 ./agent-factory --version
 ```
 
-Release binaries (Linux amd64 and arm64) are attached to each GitHub Release for a `v*` tag.
+Release binaries (Linux, macOS and Windows; amd64 and arm64 except Windows, amd64 only) are attached to each GitHub Release for a `v*` tag. Tags containing a `-` (such as `v1.0.0-rc.1`) are published as pre-releases.
 
 The screen has a scrollable output area and an input box at the bottom. Configuration loads in the background after the screen opens; type once the summary appears.
 
