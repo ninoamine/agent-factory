@@ -2,6 +2,8 @@
 
 Run several AI models as one team from a terminal. You choose the model for each request with an explicit routing command; nothing is chosen for you.
 
+New here? Read the **[guide](docs/guide.md)**: how routing and `/suggest` work, and a step-by-step Groq tutorial.
+
 ## Install and run
 
 Requires Go (see `go.mod`).
