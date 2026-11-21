@@ -118,6 +118,8 @@ func (o *output) scrollUp(width, page int) {
 func (o *output) scrollDown(page int) { o.scroll = max(0, o.scroll-page) }
 
 // wrapped soft-wraps every line to the width without adding anything (TUI-22, TUI-23).
+// It breaks at spaces first, so a JSON line breaks between tokens (still valid
+// JSON when copied); only a word longer than the width is split.
 func (o *output) wrapped(width int) []line {
 	var out []line
 	for _, l := range o.lines {
@@ -125,7 +127,7 @@ func (o *output) wrapped(width int) []line {
 			out = append(out, l)
 			continue
 		}
-		for _, w := range strings.Split(ansi.Hardwrap(l.text, max(1, width), true), "\n") {
+		for _, w := range strings.Split(ansi.Wrap(l.text, max(1, width), ""), "\n") {
 			out = append(out, line{kind: l.kind, text: w})
 		}
 	}

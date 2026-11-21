@@ -88,6 +88,7 @@ type fakeBackend struct {
 	refreshCalls atomic.Int32
 	historyCalls atomic.Int32
 	cleared      atomic.Bool
+	historyGate  chan struct{} // when set, History blocks until it is closed
 }
 
 func fixtureConfig() configuration.Config {
@@ -150,6 +151,9 @@ func (b *fakeBackend) Refresh(ctx context.Context) (configuration.RefreshOutcome
 
 func (b *fakeBackend) History(ctx context.Context, args string) (HistoryReply, error) {
 	b.historyCalls.Add(1)
+	if b.historyGate != nil {
+		<-b.historyGate
+	}
 	if strings.HasPrefix(args, "clear") {
 		return HistoryReply{Confirm: &Confirmation{
 			Prompt: "Delete all history entries? Type y or yes to confirm.",
@@ -450,6 +454,8 @@ func TestTUI13_TUI14_WhileRequestRuns(t *testing.T) { // AC11
 		h.waitScreen("Hel")
 		h.send("/models")
 		h.waitScreen("m1 | provider")
+		h.send("/help")
+		h.waitScreen("Tool commands:")
 		h.send("/history")
 		h.waitScreen("entry-1")
 		h.send("/suggest cost")
@@ -483,6 +489,30 @@ func TestTUI15_MutatingCommandsRefusedWhileRunning(t *testing.T) { // AC12
 		}
 		if !strings.Contains(h.all(), "refused") {
 			t.Fatalf("TUI-15: want a refusal message:\n%s", h.all())
+		}
+		close(a.gate)
+		h.waitScreen("total tokens: 5")
+	})
+}
+
+func TestTUI15_ConfirmAnsweredAfterRequestStartedIsRefused(t *testing.T) {
+	t.Run("TUI-15 clear confirmed while a request runs", func(t *testing.T) {
+		a := newAdapter()
+		b := newBackend(a)
+		b.historyGate = make(chan struct{})
+		h := ready(t, b)
+		h.send("/history clear") // the prompt is still being fetched
+		h.send("/code hi")       // a request starts before the prompt arrives
+		h.waitScreen("Hel")
+		close(b.historyGate)
+		h.waitScreen("Type y or yes")
+		h.send("y")
+		h.settle()
+		if b.cleared.Load() {
+			t.Fatal("TUI-15: history must not be cleared while a request runs")
+		}
+		if !strings.Contains(h.all(), "refused") {
+			t.Fatalf("want a refusal:\n%s", h.all())
 		}
 		close(a.gate)
 		h.waitScreen("total tokens: 5")
@@ -603,6 +633,47 @@ func TestTUI20_TUI21_Scrolling(t *testing.T) { // AC15
 	})
 }
 
+func TestTUI23_LongModelIDKeepsJSONValid(t *testing.T) {
+	t.Run("TUI-23 long id breaks between tokens", func(t *testing.T) {
+		long := "provider/" + strings.Repeat("m", 66)
+		sug, err := strategies.Suggest("capability", []metadata.Entry{
+			{ID: long, Capabilities: []string{"code", "reasoning", "creative"}, Speed: "fast"},
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		text, err := sug.Render("/tmp/af")
+		if err != nil {
+			t.Fatal(err)
+		}
+		b := newBackend(newAdapter())
+		b.suggestText = text
+		h := ready(t, b)
+		h.feed(tea.WindowSizeMsg{Width: 80, Height: 60})
+		h.send("/suggest capability")
+		h.waitScreen("Paste into")
+		var block []string
+		in := false
+		for _, r := range strings.Split(h.m.View(), "\n") {
+			switch {
+			case strings.HasPrefix(r, "```json"):
+				in = true
+			case strings.HasPrefix(r, "```") && in:
+				in = false
+			case in:
+				block = append(block, r)
+			}
+		}
+		var f configuration.StrategiesFile
+		if err := json.Unmarshal([]byte(strings.Join(block, "\n")), &f); err != nil {
+			t.Fatalf("copied block is not JSON: %v\n%s", err, strings.Join(block, "\n"))
+		}
+		if errs := f.Validate(); len(errs) > 0 {
+			t.Fatalf("fails strategies.json schema: %v", errs)
+		}
+	})
+}
+
 func TestTUI22_SoftWrapAndReflow(t *testing.T) { // AC16
 	t.Run("TUI-22", func(t *testing.T) {
 		b := newBackend(newAdapter())
@@ -625,6 +696,28 @@ func TestTUI22_SoftWrapAndReflow(t *testing.T) { // AC16
 		h.feed(tea.WindowSizeMsg{Width: 120, Height: 24})
 		if got := fmt.Sprint(widths()); got != "[120 80]" {
 			t.Fatalf("want reflow at 120, got %s", got)
+		}
+	})
+	t.Run("TUI-22 wraps at a space, not inside a word", func(t *testing.T) {
+		b := newBackend(newAdapter())
+		b.suggestText = strings.TrimSpace(strings.Repeat("words ", 40))
+		h := ready(t, b)
+		h.send("/suggest x")
+		h.waitScreen("words")
+		rows := 0
+		for _, r := range strings.Split(h.m.View(), "\n") {
+			if !strings.Contains(r, "words") || strings.HasPrefix(r, "> ") {
+				continue
+			}
+			rows++
+			for _, w := range strings.Fields(r) {
+				if w != "words" {
+					t.Fatalf("a word was split: %q in %q", w, r)
+				}
+			}
+		}
+		if rows < 3 {
+			t.Fatalf("want the 239-character line wrapped over several rows, got %d", rows)
 		}
 	})
 }
@@ -701,7 +794,7 @@ func TestTUI12_FailedLoadKeepsLinesRefused(t *testing.T) {
 		h.waitScreen("error: startup failed: disk on fire")
 		h.send("/models")
 		h.settle()
-		if !strings.Contains(h.all(), "startup is in progress") || b.configCalls.Load() != 0 {
+		if !strings.Contains(h.all(), "startup failed, nothing can run") || b.configCalls.Load() != 0 {
 			t.Fatalf("nothing may be dispatched after a failed load:\n%s", h.all())
 		}
 		h.key(tea.KeyCtrlC)

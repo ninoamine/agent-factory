@@ -2,9 +2,7 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/ninoamine/agent-factory/internal/app/configuration"
 	"github.com/ninoamine/agent-factory/internal/app/execution"
@@ -90,71 +88,9 @@ func (b *backend) Refresh(ctx context.Context) (configuration.RefreshOutcome, er
 	return b.manager.Refresh(ctx)
 }
 
-// historyArgs reads the first word of the /history arguments.
-func historyArgs(args string) (sub, id string) {
-	f := strings.Fields(args)
-	if len(f) > 0 {
-		sub = f[0]
-	}
-	if len(f) > 1 {
-		id = f[1]
-	}
-	return sub, id
-}
+func (b *backend) HistoryMutates(args string) bool { return history.Mutates(args) }
 
-func (b *backend) HistoryMutates(args string) bool {
-	sub, _ := historyArgs(args)
-	return sub == "delete" || sub == "clear"
-}
-
+// History runs a /history command (HIST-5, HIST-6).
 func (b *backend) History(ctx context.Context, args string) (cli.HistoryReply, error) {
-	sub, id := historyArgs(args)
-	switch sub {
-	case "":
-		entries, warns, err := b.history.List(ctx)
-		if err != nil {
-			return cli.HistoryReply{}, err
-		}
-		r := cli.HistoryReply{Warnings: warns}
-		for _, e := range entries {
-			r.Lines = append(r.Lines, formatEntry(e))
-		}
-		if len(r.Lines) == 0 {
-			r.Lines = []string{"history is empty"}
-		}
-		return r, nil
-	case "delete":
-		if id == "" {
-			return cli.HistoryReply{Lines: []string{"usage: /history delete <id>"}}, nil
-		}
-		if err := b.history.Delete(ctx, id); err != nil {
-			if errors.Is(err, history.ErrNotFound) {
-				return cli.HistoryReply{Lines: []string{"no history entry with id " + id}}, nil
-			}
-			return cli.HistoryReply{}, err
-		}
-		return cli.HistoryReply{Lines: []string{"deleted " + id}}, nil
-	case "clear":
-		return cli.HistoryReply{Confirm: &cli.Confirmation{
-			Prompt: "Delete all history entries? Type y or yes to confirm.",
-			Run: func(ctx context.Context) ([]string, error) {
-				if err := b.history.Clear(ctx); err != nil {
-					return nil, err
-				}
-				return []string{"history cleared"}, nil
-			},
-		}}, nil
-	}
-	return cli.HistoryReply{Lines: []string{"usage: /history | /history delete <id> | /history clear"}}, nil
-}
-
-func formatEntry(e history.Entry) string {
-	n := func(p *int) string {
-		if p == nil {
-			return "unavailable"
-		}
-		return fmt.Sprint(*p)
-	}
-	return fmt.Sprintf("%s | %s | %s | %s | in: %s | out: %s | %s",
-		e.ID, e.Timestamp, e.Command, e.Model, n(e.InputTokens), n(e.OutputTokens), e.Status)
+	return b.history.Command(ctx, args)
 }

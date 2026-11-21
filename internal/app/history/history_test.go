@@ -187,3 +187,42 @@ func TestHIST10_CorruptedLineSkipped(t *testing.T) {
 		t.Error("HIST-10 delete must not drop unrelated lines")
 	}
 }
+
+func TestHIST6_CommandParsingAndMutates(t *testing.T) {
+	t.Run("HIST-6 delete and clear are mutating", func(t *testing.T) {
+		for args, want := range map[string]bool{
+			"": false, "delete abc": true, "clear": true, "list": false, "  clear ": true,
+		} {
+			if got := Mutates(args); got != want {
+				t.Errorf("Mutates(%q) = %v, want %v", args, got, want)
+			}
+		}
+	})
+	t.Run("HIST-6 clear asks first, then clears", func(t *testing.T) {
+		s, st := newSvc(t)
+		_ = s.Record(context.Background(), rec(execution.StatusSuccess, ip(1), ip(2)))
+		r, err := s.Command(context.Background(), "clear")
+		if err != nil || r.Confirm == nil || len(st.data) == 0 {
+			t.Fatalf("clear must only ask: %+v %v", r, err)
+		}
+		if _, err := r.Confirm.Run(context.Background()); err != nil || len(st.data) != 0 {
+			t.Fatalf("confirmed clear must empty history: %v", err)
+		}
+	})
+	t.Run("HIST-5 list shows id; empty and unknown ids are reported", func(t *testing.T) {
+		s, _ := newSvc(t)
+		r, _ := s.Command(context.Background(), "")
+		if len(r.Lines) != 1 || r.Lines[0] != "history is empty" {
+			t.Fatalf("got %v", r.Lines)
+		}
+		_ = s.Record(context.Background(), rec(execution.StatusSuccess, nil, nil))
+		r, _ = s.Command(context.Background(), "")
+		if want := "a | 2026-01-02T03:04:05Z | /code | p/m | in: unavailable | out: unavailable | success"; r.Lines[0] != want {
+			t.Fatalf("got %v", r.Lines)
+		}
+		r, _ = s.Command(context.Background(), "delete zzz")
+		if r.Lines[0] != "no history entry with id zzz" {
+			t.Fatalf("got %v", r.Lines)
+		}
+	})
+}
