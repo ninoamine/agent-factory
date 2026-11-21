@@ -24,6 +24,7 @@ Short entries. Check here before asking the user again. Status: `decided` | `pro
 | D-018 | 429, 5xx, timeouts and network errors map to the existing `provider_failure` kind with a readable reason; no new error kinds (PROV-28) | decided |
 | D-019 | Each provider in `models.json` declares a required `type` (`anthropic`, `openai`, `ollama`) and optional `baseUrl`, `timeoutSeconds`; each model may set `model` (API name) and `maxOutputTokens`. Anthropic `max_tokens` defaults to 8192 | decided |
 | D-020 | Request timeouts are idle timeouts (60s to first byte, 60s between chunks), overridable per provider; no total cap. OpenAI-compatible requests always ask for streamed usage, with no resend if refused | decided |
+| D-021 | The screen word-wraps (breaks at spaces; only a word wider than the window is split). A single string longer than the window in the `/suggest` JSON block cannot be kept intact when copied; accepted for V1 | proposed (needs user confirmation) |
  
 ## Template for new entries
  

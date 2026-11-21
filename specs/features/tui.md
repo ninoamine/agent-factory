@@ -1,6 +1,6 @@
 ---
 id: TUI
-status: ready
+status: implemented
 version: V1
 depends_on: [CFG, META, STRAT, ROUTE, EXEC, HIST, REFRESH]
 modules: [cmd/agent-factory, internal/cli]
@@ -26,7 +26,7 @@ Goal: an interactive terminal screen (built with Bubble Tea, D-016) and the app'
 
 - TUI-10 The screen MUST open before configuration loading and the metadata fetch start, and MUST show a loading line while they run.
 - TUI-11 When loading finishes, MUST render its results in the output area in this order: missing-file warnings (CFG-2), configuration errors, metadata warnings (META-8), then the summary (CFG-7).
-- TUI-12 A line submitted before loading finishes MUST be refused with a message saying startup is in progress. Nothing is dispatched.
+- TUI-12 A line submitted before loading finishes MUST be refused with a message saying startup is in progress. Nothing is dispatched. If loading fails, the screen MUST show the failure, keep refusing lines with a message saying startup failed, and still exit on Ctrl+C (TUI-17).
 
 ### While a request runs
 
@@ -49,8 +49,8 @@ Goal: an interactive terminal screen (built with Bubble Tea, D-016) and the app'
 
 - TUI-20 While the view is at the bottom, new output MUST scroll it to show the newest line. When the user has scrolled up, new output MUST NOT move the view until the user returns to the bottom.
 - TUI-21 PgUp and PgDn MUST scroll the output area by one page.
-- TUI-22 Long lines MUST soft-wrap to the window width and reflow when the window is resized.
-- TUI-23 The `/suggest` JSON block MUST be rendered without any added prefix, label, border or indentation, so that text copied from the terminal at a width of 80 columns or more parses as valid JSON (STRAT-6, STRAT-11).
+- TUI-22 Long lines MUST soft-wrap to the window width and reflow when the window is resized. Wrapping MUST prefer breaking at spaces; only a word wider than the window is split.
+- TUI-23 The `/suggest` JSON block MUST be rendered without any added prefix, label, border or indentation, so that text copied from the terminal at a width of 80 columns or more parses as valid JSON (STRAT-6, STRAT-11). Because TUI-22 breaks at spaces, a long line breaks between JSON tokens. A single string value longer than the window width cannot be kept intact; this is accepted (D-021).
 
 ## Out of scope
 
@@ -69,14 +69,14 @@ Tests render the screen as plain text at a fixed size (80x24 unless stated other
 - AC7 (TUI-2): `hello` goes to ROUTE unchanged and its refusal is shown; `/models extra` goes to the `/models` handler with `extra` passed through; neither reaches the provider.
 - AC8 (TUI-8): `/help` lists `/refresh`, `/suggest`, `/models`, `/history`, `/help`, `/fast`, `/code`, `/reason`, `/creative`.
 - AC9 (TUI-10,11): a fake loader that blocks shows the loading line. Once it is released with one missing file and one metadata warning, the output shows the missing-file warning, then the metadata warning, then the summary.
-- AC10 (TUI-12): `/models` submitted while the fake loader blocks is refused, and the `/models` handler is not called.
+- AC10 (TUI-12): `/models` submitted while the fake loader blocks is refused, and the `/models` handler is not called. If the fake loader fails instead, the failure is shown, `/models` is refused with a startup-failed message, and Ctrl+C exits.
 - AC11 (TUI-13,14): during a fake stream, `/models` prints its list and the stream keeps going; `/code hi` shows `error: a request is already running` and the provider is called only once.
 - AC12 (TUI-15): during a fake stream, `/history clear` and `/refresh` are both refused and the history and configuration fakes are not called.
 - AC13 (TUI-17,18): Ctrl+C while idle exits; Ctrl+D on an empty input exits; Ctrl+D with `abc` typed does nothing.
 - AC14 (TUI-19): after `/history clear`, answering `n` leaves history intact; answering `yes` clears it; answering `/models` cancels the prompt and does not run `/models`; Ctrl+C during the prompt cancels it and the app keeps running.
 - AC15 (TUI-20,21): with 100 lines of output, PgUp moves the view up. A new line arriving while scrolled up does not move the view. After scrolling back to the bottom, the next new line is visible.
-- AC16 (TUI-22): a 200-character line wraps at 80 columns and reflows to 120 columns after a resize to 120x24.
-- AC17 (TUI-23): `/suggest capability` output copied from the rendered 80-column screen (the JSON block's lines joined) parses as JSON and passes the `strategies.json` schema.
+- AC16 (TUI-22): a 200-character line wraps at 80 columns and reflows to 120 columns after a resize to 120x24. A line of words wraps at a space, not inside a word.
+- AC17 (TUI-23): `/suggest capability` output copied from the rendered 80-column screen (the JSON block's lines joined) parses as JSON and passes the `strategies.json` schema, also when a model id makes a JSON line wider than 80 columns (the line breaks between tokens).
 
 ## Open questions
 

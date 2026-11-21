@@ -14,6 +14,7 @@ import (
 
 	"github.com/ninoamine/agent-factory/internal/app/configuration"
 	"github.com/ninoamine/agent-factory/internal/app/execution"
+	"github.com/ninoamine/agent-factory/internal/app/history"
 	"github.com/ninoamine/agent-factory/internal/app/routing"
 	"github.com/ninoamine/agent-factory/internal/domain"
 )
@@ -26,18 +27,12 @@ type Startup struct {
 	Summary          string                  // CFG-7
 }
 
-// Confirmation is a question the application asks before a destructive action (TUI-19).
-type Confirmation struct {
-	Prompt string
-	Run    func(ctx context.Context) ([]string, error)
-}
+// Confirmation is a question the application asks before a destructive action
+// (TUI-19). The only one in V1 is /history clear, so the type comes from history.
+type Confirmation = history.Confirmation
 
 // HistoryReply is the outcome of a /history command.
-type HistoryReply struct {
-	Lines    []string
-	Warnings []string
-	Confirm  *Confirmation // set for /history clear (HIST-6)
-}
+type HistoryReply = history.Reply
 
 // Backend is what the screen needs from the application layer. It is defined
 // here, where it is consumed (CONV-4), and wired in cmd/agent-factory.
@@ -64,6 +59,7 @@ type Model struct {
 	out           output
 
 	loaded     bool
+	loadFailed bool
 	loadCancel context.CancelFunc
 
 	running   bool
@@ -202,7 +198,8 @@ func (m *Model) exit() (tea.Model, tea.Cmd) {
 func (m *Model) pageSize() int { return max(1, m.height-1) }
 
 func (m *Model) onLoaded(l loadedMsg) {
-	if l.err != nil { // stay not-loaded: nothing may be dispatched without a configuration
+	if l.err != nil {
+		m.loadFailed = true // stay not-loaded: nothing may be dispatched without a configuration
 		m.add(kindError, "startup failed: "+l.err.Error()+" (press Ctrl+C to exit)")
 		return
 	}
@@ -245,7 +242,11 @@ func (m *Model) submit(text string) (tea.Model, tea.Cmd) {
 	}
 	m.add(kindEcho, "> "+text)
 	if !m.loaded { // TUI-12
-		m.add(kindError, "startup is in progress; try again when loading has finished")
+		if m.loadFailed {
+			m.add(kindError, "startup failed, nothing can run; press Ctrl+C to exit")
+		} else {
+			m.add(kindError, "startup is in progress; try again when loading has finished")
+		}
 		return m, nil
 	}
 	first, rest := splitFirst(line)
@@ -261,6 +262,10 @@ func (m *Model) answer(line string) (tea.Model, tea.Cmd) {
 	m.add(kindEcho, "> "+line)
 	if a := strings.ToLower(strings.TrimSpace(line)); a != "y" && a != "yes" {
 		m.add(kindInfo, "cancelled")
+		return m, nil
+	}
+	if m.running { // TUI-15: a request started after the prompt was asked
+		m.add(kindError, "the confirmation is refused while a request is running; nothing was changed")
 		return m, nil
 	}
 	return m, func() tea.Msg {

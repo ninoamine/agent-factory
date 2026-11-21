@@ -7,20 +7,10 @@ import (
 	"testing"
 
 	"github.com/ninoamine/agent-factory/internal/app/configuration"
+	"github.com/ninoamine/agent-factory/internal/app/history"
 	"github.com/ninoamine/agent-factory/internal/app/metadata"
 	"github.com/ninoamine/agent-factory/internal/infra/storage"
 )
-
-func TestHistoryMutates(t *testing.T) { // TUI-15 relies on this
-	b := &backend{}
-	for args, want := range map[string]bool{
-		"": false, "delete abc": true, "clear": true, "list": false, "  clear ": true,
-	} {
-		if got := b.HistoryMutates(args); got != want {
-			t.Errorf("HistoryMutates(%q) = %v, want %v", args, got, want)
-		}
-	}
-}
 
 type fakeRegistry struct{ urls []string }
 
@@ -72,6 +62,23 @@ func TestPROV10BackendConfiguresAdapters(t *testing.T) {
 		out, _ := b.Refresh(context.Background())
 		if out.Applied || len(reg.urls) != before {
 			t.Fatalf("applied=%v calls %v", out.Applied, reg.urls)
+		}
+	})
+}
+
+func TestBackendHistoryDelegates(t *testing.T) {
+	t.Run("HIST-6 backend passes /history to the history service", func(t *testing.T) {
+		dir := t.TempDir()
+		b := &backend{history: &history.Service{Store: storage.HistoryFile{Path: filepath.Join(dir, "history.jsonl"), Writer: storage.Writer{}}}}
+		if !b.HistoryMutates("clear") || b.HistoryMutates("") {
+			t.Fatal("HistoryMutates must follow the history rules")
+		}
+		r, err := b.History(context.Background(), "")
+		if err != nil || len(r.Lines) != 1 || r.Lines[0] != "history is empty" {
+			t.Fatalf("got %+v, %v", r, err)
+		}
+		if r, _ := b.History(context.Background(), "clear"); r.Confirm == nil {
+			t.Fatal("clear must ask for confirmation")
 		}
 	})
 }
