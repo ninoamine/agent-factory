@@ -41,7 +41,7 @@ Short entries. Check here before asking the user again. Status: `decided` | `pro
 | D-035 | Reverses D-025: the tool may write files in the project dir (cwd), only after the user approves a shown diff (yes/no/redo/edit), only on per-subcommand allowed paths, never deleting. `models.json`/`strategies.json` stay never-written | decided |
 | D-036 | `implement` returns file contents that the tool applies after approval; no agentic tool-calling loop. Context = the spec's `modules` folders + spec + dependencies | decided |
 | D-037 | The only external command the tool runs is `git diff HEAD` (no shell) for `/sdd review`. No tests, linters or commits | decided |
-| D-038 | SDD index is `specs/index.md` (markdown table), not YAML. Feature statuses: `draft` → `validated` → `implemented` | decided |
+| D-038 | SDD index is `specs/index.md` (markdown table), not YAML. Feature statuses: `draft` → `ready` → `implemented` (same as this project) | decided |
 | D-039 | `/sdd init` copies built-in language-neutral templates without a model call and never overwrites existing files. `spec-validate` on failure proposes a corrected spec | decided |
 | D-040 | SDD open questions resolved as proposed: full-file proposals only; 400 KB prompt cap; no direct re-implement of an `implemented` spec; `/sdd spec <id> <input>` changes a spec via `change.md`, resets it to `draft`, may append to decisions; `implement` writes only inside `modules` (tests included) | decided |
  

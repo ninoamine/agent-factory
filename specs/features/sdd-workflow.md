@@ -57,13 +57,13 @@ Rules SDD-1..29 (earlier pipeline design) are removed and their IDs are not reus
 
 ### Status lifecycle
 
-- SDD-52 Feature statuses are `draft`, `validated`, `implemented`, kept in both the feature front matter and `specs/index.md`. Status edits MUST be made by the tool itself (not taken from model text) and included in the proposal (SDD-48).
+- SDD-52 Feature statuses are `draft`, `ready`, `implemented`, kept in both the feature front matter and `specs/index.md`. Status edits MUST be made by the tool itself (not taken from model text) and included in the proposal (SDD-48).
 - SDD-53 `spec` MUST create the feature with status `draft`, a unique id not already in the index, and a matching index row. A proposal with a duplicate id or invalid front matter MUST be rejected.
 - SDD-54 The model's verdict for `spec-validate`, `spec-review` and `review` MUST be read from a fixed marker (`pass` or `fail`); a missing or unreadable marker counts as `fail`.
-  - `spec-validate`: `pass` → propose status `validated`. `fail` → show the problems and propose a corrected spec that stays `draft`.
+  - `spec-validate`: `pass` → propose status `ready`. `fail` → show the problems and propose a corrected spec that stays `draft`.
   - `spec-review`: `pass` → propose status `implemented`. `fail` → show the gaps, write nothing.
   - `review`: show the verdict and findings, write nothing.
-- SDD-55 `implement` MUST be refused unless the feature's status is `validated`. On an `implemented` feature, the refusal MUST say to change the spec first (SDD-63, SDD-64).
+- SDD-55 `implement` MUST be refused unless the feature's status is `ready`. On an `implemented` feature, the refusal MUST say to change the spec first (SDD-63, SDD-64).
 
 ### Review
 
@@ -80,7 +80,7 @@ Rules SDD-1..29 (earlier pipeline design) are removed and their IDs are not reus
 
 - SDD-61 Proposals MUST contain full file content only; diffs or patches MUST NOT be accepted (rejected as unparsable, SDD-45). A file whose current content alone exceeds the size cap cannot be changed by `implement`; the refusal names it.
 - SDD-62 The size cap is 400 KB of text per prompt (instruction, context and input together). No per-model limit in V2.
-- SDD-63 Re-implementing an `implemented` feature MUST NOT be possible directly; the spec is changed first (SDD-64), which resets it to `draft`, then validated again.
+- SDD-63 Re-implementing an `implemented` feature MUST NOT be possible directly; the spec is changed first (SDD-64), which resets it to `draft`, then validated again (`spec-validate`) to return to `ready`.
 - SDD-64 `/sdd spec <id> <input>` MUST be treated as a change to an existing feature when the first token exactly matches (case-sensitive) an id in `specs/index.md` and input follows. It MUST send the feature file, its `depends_on` feature files, `specs/templates/change.md`, `specs/index.md`, `specs/decisions.md`, `specs/common/*.md` and the input. The proposal MUST keep the feature id and MUST NOT renumber or reuse rule IDs; the tool MUST reset the status to `draft` in the front matter and the index (SDD-52). A `specs/decisions.md` change MUST only append lines; any other edit to it rejects the proposal whole.
 - SDD-65 `implement` MUST NOT write tests or any file outside the feature's `modules` folders (SDD-46); tests live in those folders.
 
@@ -114,7 +114,7 @@ Tests use a temp project dir, a fake provider, a fake editor and a fake git (TES
 - AC9 (SDD-48,49,51): a `spec` proposal shows the new feature file and the index diff. `yes` writes both. `no` writes nothing. `redo shorter` calls the provider again with the previous proposal and `shorter` in the prompt. `maybe` shows the valid answers and keeps waiting.
 - AC10 (SDD-49,50): the fake editor changes a path to `README.md`; the re-check rejects the proposal. With no editor variable set, `edit` shows a message and keeps waiting. The temp file is gone afterwards and had mode `0600`.
 - AC11 (SDD-53): a `spec` proposal reusing id `AUTH` already in the index is rejected. A new spec is written with status `draft` in the front matter and the index.
-- AC12 (SDD-54): `spec-validate AUTH` with verdict `pass` proposes `validated` in both places. With `fail`, it shows the problems and the proposed spec stays `draft`. With no marker, it is treated as `fail`.
+- AC12 (SDD-54): `spec-validate AUTH` with verdict `pass` proposes `ready` in both places. With `fail`, it shows the problems and the proposed spec stays `draft`. With no marker, it is treated as `fail`.
 - AC13 (SDD-54): `spec-review AUTH` with `pass` proposes `implemented`; with `fail`, nothing is written.
 - AC14 (SDD-55): `/sdd implement AUTH` on a `draft` spec is refused.
 - AC15 (SDD-56): with the fake git returning no diff, `review` calls no model. Outside a git repo, it is refused. With a diff touching `src/auth/x.go`, the prompt includes the AUTH spec. Nothing is written.
