@@ -44,6 +44,7 @@ Short entries. Check here before asking the user again. Status: `decided` | `pro
 | D-038 | SDD index is `specs/index.md` (markdown table), not YAML. Feature statuses: `draft` → `ready` → `implemented` (same as this project) | decided |
 | D-039 | `/sdd init` copies built-in language-neutral templates without a model call and never overwrites existing files. `spec-validate` on failure proposes a corrected spec | decided |
 | D-040 | SDD open questions resolved as proposed: full-file proposals only; 400 KB prompt cap; no direct re-implement of an `implemented` spec; `/sdd spec <id> <input>` changes a spec via `change.md`, resets it to `draft`, may append to decisions; `implement` writes only inside `modules` (tests included) | decided |
+| D-041 | V2 changes to implemented V1 specs are added as a `V2 amendments` section at the end of each file, with new rule IDs; V1 rules stay untouched until V2 is built. `/refresh` is refused during an SDD run (REFRESH-10) | decided |
  
 ## Template for new entries
  

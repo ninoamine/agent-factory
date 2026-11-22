@@ -31,7 +31,7 @@ Rules SDD-1..29 (earlier pipeline design) are removed and their IDs are not reus
 - SDD-37 Each model-using subcommand MUST map to one routing command through the optional `sdd` object in `strategies.json` (D-034). Defaults: `implement` → `/code`; `roadmap`, `spec`, `spec-validate`, `spec-review`, `review` → `/reason`.
 - SDD-38 The model MUST be resolved from the mapped command with ROUTE's rules (enabled, assigned, first model, CFG-10). If it does not resolve, MUST refuse with the subcommand, command and ROUTE-4 reason; nothing is executed.
 - SDD-39 Each model run MUST be one EXEC call on exactly one model (ARCH-5), with EXEC's streaming, cancellation, error and usage behavior (EXEC-2..5). MUST NOT retry or fall back (EXEC-4).
-- SDD-40 Only one SDD subcommand MAY run or wait for approval at a time. While one does, other `/sdd` subcommands and routing requests MUST be refused like TUI-14. Read-only tool commands still run (TUI-13).
+- SDD-40 Only one SDD subcommand MAY run or wait for approval at a time. While one does, other `/sdd` subcommands and routing requests MUST be refused like TUI-14, and `/refresh`, `/history delete` and `/history clear` MUST be refused (REFRESH-10, TUI-27). Read-only tool commands still run (TUI-13).
 
 ### Context sent to the model
 
@@ -88,7 +88,7 @@ Rules SDD-1..29 (earlier pipeline design) are removed and their IDs are not reus
 
 Agentic tool-calling loops. Running tests, linters or builds. Deleting files. Git commit or stage. Diff or patch proposals. Multiple projects per session. Writing outside the allowed paths.
 
-## Impacts (change specs needed before SDD becomes `ready`)
+## Impacts (written as V2 amendments in each file, D-041)
 
 - `common/project.md` principle 2 and ARCH-7: user config files stay never-written; project files are written only with approval (D-035).
 - `common/config-files.md`: new "project files" section (SDD-35, SDD-46).

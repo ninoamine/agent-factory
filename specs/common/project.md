@@ -29,3 +29,11 @@ Interactive terminal app: center area for tool and model output, bottom input bo
 | strategy | one global optimization goal: cost, speed, or capability |
 | assignment | routing command to list of models, stored in `strategies.json` |
 | active configuration | the last successfully validated set of files held in memory |
+
+## V2 amendments (draft, not implemented; D-041)
+
+Apply only when SDD is built, after `v1.0.0` (D-022). V1 rules above stay unchanged for V1. New IDs never reuse old ones.
+
+- Principle 2 (V2): the tool never writes `models.json` or `strategies.json`. It MAY write files in the user's project dir, only through an approved SDD proposal (SDD-46..51, D-035).
+- Principle 1 (V2): every request has a valid routing command, except `/sdd` subcommands (mapped by D-034) and, once specified, the default-model feature (D-026).
+- New glossary terms: `SDD` (spec-driven development: `/sdd` subcommands), `proposal` (file changes returned by a model, shown as a diff, written only after approval), `project dir` (working directory at launch).
