@@ -25,6 +25,25 @@ Short entries. Check here before asking the user again. Status: `decided` | `pro
 | D-019 | Each provider in `models.json` declares a required `type` (`anthropic`, `openai`, `ollama`) and optional `baseUrl`, `timeoutSeconds`; each model may set `model` (API name) and `maxOutputTokens`. Anthropic `max_tokens` defaults to 8192 | decided |
 | D-020 | Request timeouts are idle timeouts (60s to first byte, 60s between chunks), overridable per provider; no total cap. OpenAI-compatible requests always ask for streamed usage, with no resend if refused | decided |
 | D-021 | The screen word-wraps (breaks at spaces; only a word wider than the window is split). A single string longer than the window in the `/suggest` JSON block cannot be kept intact when copied; accepted for V1 | proposed (needs user confirmation) |
+| D-022 | V2 is specified in parallel with V1 testing; V2 code starts only after `v1.0.0`. V1 fixes go to `master` as `v1.0.x` | decided |
+| D-023 | V2 themes: SDD workflow, default model, automatic task classification, cost tracking, usage-informed recommendations. Fallback/retry stays out | decided |
+| D-024 | SDD steps (spec, plan, implement, validate) run as a pipeline: each step goes to its own model, output feeds the next step, user reviews/edits and approves between steps. Context exists only inside one pipeline run; D-008 still holds for normal requests | superseded by D-033 |
+| D-025 | SDD implement step returns text (code/diffs) only. The tool never writes project files (principle 2 extends to project files) | superseded by D-033 |
+| D-026 | V2 allows a default model for requests without a routing command; amends principle 1 and D-008 "always need an explicit routing command" | decided |
+| D-027 | V2 adds automatic task classification of the routing command; mechanism (rules vs. classifier model) is open | proposed (needs user confirmation) |
+| D-028 | V2 adds tool command `/sdd` with subcommands `start <idea>`, `next`, `redo [feedback]`, `edit`, `stop`, and no-arg status. Its handler runs steps via ROUTE resolution and EXEC; amends D-005 and ROUTE-7 | superseded by D-033 |
+| D-029 | SDD steps map to existing routing commands through an optional `sdd` object in `strategies.json`; defaults spec/plan/validate → `/reason`, implement → `/code` | superseded by D-033 |
+| D-030 | Each SDD step receives the idea plus all approved earlier outputs; exception to ROUTE-9/EXEC-7 for SDD prompts only | superseded by D-033 |
+| D-031 | SDD review: approve (`next`), rerun with feedback (`redo`), edit in `$VISUAL`/`$EDITOR` via an owner-only temp file (`edit`), abort (`stop`) | superseded by D-033 |
+| D-032 | SDD runs live in memory only; history gets one record per step with `runId` and `step`, no text (HIST-3 unchanged) | superseded by D-033 |
+| D-033 | SDD redesigned from the user's draft (sdd-draft.txt): `/sdd` scaffolds and drives spec-driven development in the user's project with subcommands `init`, `roadmap`, `spec`, `spec-validate`, `implement`, `spec-review`, `review`. Replaces the pipeline design (D-024, D-028, D-030..D-032); SDD-1..29 removed | decided |
+| D-034 | Each model-using `/sdd` subcommand maps to a routing command via an optional `sdd` object in `strategies.json`; default `implement` → `/code`, others → `/reason` | decided |
+| D-035 | Reverses D-025: the tool may write files in the project dir (cwd), only after the user approves a shown diff (yes/no/redo/edit), only on per-subcommand allowed paths, never deleting. `models.json`/`strategies.json` stay never-written | decided |
+| D-036 | `implement` returns file contents that the tool applies after approval; no agentic tool-calling loop. Context = the spec's `modules` folders + spec + dependencies | decided |
+| D-037 | The only external command the tool runs is `git diff HEAD` (no shell) for `/sdd review`. No tests, linters or commits | decided |
+| D-038 | SDD index is `specs/index.md` (markdown table), not YAML. Feature statuses: `draft` → `validated` → `implemented` | decided |
+| D-039 | `/sdd init` copies built-in language-neutral templates without a model call and never overwrites existing files. `spec-validate` on failure proposes a corrected spec | decided |
+| D-040 | SDD open questions resolved as proposed: full-file proposals only; 400 KB prompt cap; no direct re-implement of an `implemented` spec; `/sdd spec <id> <input>` changes a spec via `change.md`, resets it to `draft`, may append to decisions; `implement` writes only inside `modules` (tests included) | decided |
  
 ## Template for new entries
  

@@ -21,6 +21,18 @@ Interactive Linux TUI that routes each request to exactly one configured model v
 - Database for history.
 - Encryption at rest for API keys.
 
+## V2 (planned, specs only)
+
+Not buildable until V1 is released as `v1.0.0` (D-022). Specs may be drafted now; feature files stay `draft` and code stays on V1. Themes (D-023):
+
+- **SDD workflow** (SDD): `/sdd` scaffolds spec-driven development in the user's project (`init`) and drives it: `roadmap`, `spec`, `spec-validate`, `implement`, `spec-review`, `review`. Each subcommand runs on its mapped model (D-034); file changes are written only after the user approves the diff (D-033, D-035).
+- **Default model** (ROUTE change): a request without a routing command goes to a configured default model (D-026).
+- **Automatic task classification** (CLASSIFY): the tool chooses the routing command from the request text (D-027).
+- **Cost tracking** (COST): actual cost per request from returned usage and known prices; unknown price stays unknown.
+- **Usage-informed recommendations** (USAGE): `/suggest` uses history and cost data; still display-only (D-002 holds).
+
+Still out of V2: fallback/retry to another model, agentic tool-calling loops, running tests or other commands (except `git diff`, D-037), agent teams, free-form multi-turn chat, automatic strategy adaptation, writing `models.json`/`strategies.json`, GUI, hosted backend, telemetry, database, encryption at rest.
+
 ## Later candidates (unordered)
 
-Task orchestration across models, agent teams, conversation context, usage-informed recommendations, cost tracking, automatic task classification, tool-assisted strategy writing, optional sync.
+Agent teams, free-form conversation context, fallback/retry, agentic implement with test runs, tool-assisted strategy writing, optional sync.
