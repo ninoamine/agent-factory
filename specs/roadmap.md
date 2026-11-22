@@ -23,16 +23,12 @@ Interactive Linux TUI that routes each request to exactly one configured model v
 
 ## V2 (planned, specs only)
 
-Not buildable until V1 is released as `v1.0.0` (D-022). Specs may be drafted now; feature files stay `draft` and code stays on V1. Themes (D-023):
+Not buildable until V1 is released as `v1.0.0` (D-022). The SDD spec is `ready`; code starts only after that release. Scope (D-042): SDD only.
 
 - **SDD workflow** (SDD): `/sdd` scaffolds spec-driven development in the user's project (`init`) and drives it: `roadmap`, `spec`, `spec-validate`, `implement`, `spec-review`, `review`. Each subcommand runs on its mapped model (D-034); file changes are written only after the user approves the diff (D-033, D-035).
-- **Default model** (ROUTE change): a request without a routing command goes to a configured default model (D-026).
-- **Automatic task classification** (CLASSIFY): the tool chooses the routing command from the request text (D-027).
-- **Cost tracking** (COST): actual cost per request from returned usage and known prices; unknown price stays unknown.
-- **Usage-informed recommendations** (USAGE): `/suggest` uses history and cost data; still display-only (D-002 holds).
 
 Still out of V2: fallback/retry to another model, agentic tool-calling loops, running tests or other commands (except `git diff`, D-037), agent teams, free-form multi-turn chat, automatic strategy adaptation, writing `models.json`/`strategies.json`, GUI, hosted backend, telemetry, database, encryption at rest.
 
 ## Later candidates (unordered)
 
-Agent teams, free-form conversation context, fallback/retry, agentic implement with test runs, tool-assisted strategy writing, optional sync.
+Default model, automatic task classification, cost tracking, usage-informed recommendations, agent teams, free-form conversation context, fallback/retry, agentic implement with test runs, tool-assisted strategy writing, optional sync.

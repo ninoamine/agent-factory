@@ -1,6 +1,6 @@
 ---
 id: SDD
-status: draft
+status: ready
 version: V2
 depends_on: [CFG, ROUTE, EXEC, HIST, TUI]
 modules: [internal/app/sdd, internal/cli]
