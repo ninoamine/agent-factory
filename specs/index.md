@@ -13,6 +13,7 @@ Status: `draft` (not ready to implement) | `ready` | `implemented`. Version: see
 | REFRESH | features/refresh.md | implemented | V1 | CFG, META | internal/app/configuration |
 | TUI | features/tui.md | implemented | V1 | all | cmd/agent-factory, internal/cli |
 | PROV | features/provider-adapters.md | implemented | V1 | CFG, META, EXEC | internal/infra/providers, internal/app/configuration, cmd/agent-factory |
+| SDD | features/sdd-workflow.md | ready | V2 | CFG, ROUTE, EXEC, HIST, TUI | internal/app/sdd, internal/cli |
 
 Common (read for every task): `common/project.md`, `common/architecture.md`, `common/conventions.md`. File ownership: `common/config-files.md`.
 

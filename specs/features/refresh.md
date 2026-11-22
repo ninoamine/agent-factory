@@ -36,3 +36,11 @@ File watching, automatic refresh, partial application.
 ## Open questions
 
 None.
+
+## V2 amendments (draft, not implemented; D-041)
+
+Apply only when SDD is built, after `v1.0.0` (D-022). V1 rules above stay unchanged for V1. New IDs never reuse old ones.
+
+- REFRESH-10 `/refresh` MUST be refused while an SDD subcommand is running or waiting for approval (SDD-40), with a message, so the models cannot change under a pending proposal. The active configuration is unchanged.
+
+- AC6 (REFRESH-10): `/refresh` during an SDD proposal prompt is refused and the configuration fake is not called.

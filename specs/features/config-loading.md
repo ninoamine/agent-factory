@@ -46,3 +46,11 @@ Editing config from the CLI. Creating template files. Watching files for changes
 ## Open questions
 
 None.
+
+## V2 amendments (draft, not implemented; D-041)
+
+Apply only when SDD is built, after `v1.0.0` (D-022). V1 rules above stay unchanged for V1. New IDs never reuse old ones.
+
+- CFG-11 MUST validate the optional `sdd` object (FILE-4): only the six subcommand keys, each value one of `/fast|/code|/reason|/creative`, otherwise a CFG-5 error naming file and field. An absent `sdd` object is valid and means defaults (SDD-37). A mapped command that is disabled or unassigned is NOT a configuration error; it is refused at run time (SDD-38).
+
+- AC7 (CFG-11): `"sdd": {"review": "/fast"}` loads; `"sdd": {"deploy": "/code"}` and `"sdd": {"spec": "/nope"}` each give an error naming file and field; no `sdd` object loads.

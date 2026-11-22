@@ -81,3 +81,17 @@ Tests render the screen as plain text at a fixed size (80x24 unless stated other
 ## Open questions
 
 None.
+
+## V2 amendments (draft, not implemented; D-041)
+
+Apply only when SDD is built, after `v1.0.0` (D-022). V1 rules above stay unchanged for V1. New IDs never reuse old ones.
+
+- TUI-24 `/help` MUST also list `/sdd` and its subcommands (extends TUI-8).
+- TUI-25 When SDD asks for approval (SDD-49), MUST show the proposed files with their diffs, then the valid answers `yes`, `no`, `redo [feedback]`, `edit`. The next submitted line is the answer and MUST NOT be dispatched as a command. Ctrl+C at this prompt answers `no` and does not exit the app (like TUI-19).
+- TUI-26 For `edit` (SDD-50), MUST suspend the screen, run the editor in the terminal, then restore the screen and show the result. The editor launch sits behind an interface (SDD-60).
+- TUI-27 While an SDD subcommand runs or waits for approval, a routing request or another `/sdd` subcommand MUST be refused with an error naming the active subcommand (extends TUI-14). `/help`, `/models`, `/suggest` and `/history` (list) still run (TUI-13). `/history delete`, `/history clear` and `/refresh` are refused (TUI-15, REFRESH-10).
+- TUI-28 `/sdd init` confirmation (SDD-36) uses the TUI-19 prompt.
+
+- AC18 (TUI-24): `/help` lists `/sdd`.
+- AC19 (TUI-25,26): a fake proposal shows its diff and the four answers; `maybe` re-shows them; `edit` suspends and restores the screen with a fake editor; Ctrl+C answers `no` and the app keeps running.
+- AC20 (TUI-27): during a fake SDD stream, `/code hi`, `/sdd review`, `/history clear` and `/refresh` are refused; `/models` runs.

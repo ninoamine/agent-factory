@@ -32,3 +32,13 @@ Retries, fallback, multi-model calls, cost computation.
 - AC3 (EXEC-3): cancel stops a mocked stream; non-cancellable adapter shows the notice.
 - AC4 (EXEC-5): response without usage shows "unavailable".
 - AC5 (EXEC-8): each outcome produces one history record.
+
+## V2 amendments (draft, not implemented; D-041)
+
+Apply only when SDD is built, after `v1.0.0` (D-022). V1 rules above stay unchanged for V1. New IDs never reuse old ones.
+
+- EXEC-10 EXEC-7 applies to normal requests. An SDD run MAY send a prompt with file context built by SDD (SDD-41). EXEC MUST NOT add history or context of its own.
+- EXEC-11 EXEC MUST accept the context size cap check result from SDD and MUST NOT enforce SDD limits itself (SDD-43).
+- EXEC-12 Every other EXEC rule (EXEC-1..6, EXEC-8, EXEC-9) applies unchanged to SDD runs.
+
+- AC6 (EXEC-10): an SDD prompt with file context reaches the fake provider unchanged; a normal `/code hi` still sends exactly `hi`.

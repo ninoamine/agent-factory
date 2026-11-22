@@ -40,3 +40,13 @@ Note (AC5): the routing package returns a tool-command result and never a model.
 ## Open questions
 
 None.
+
+## V2 amendments (draft, not implemented; D-041)
+
+Apply only when SDD is built, after `v1.0.0` (D-022). V1 rules above stay unchanged for V1. New IDs never reuse old ones.
+
+- ROUTE-12 `/sdd` MUST be handled as a tool command before routing (extends ROUTE-7), and MUST NOT be sent to a model as a prompt.
+- ROUTE-13 ROUTE MUST expose resolving a routing command to a model without a prompt, so SDD can resolve its mapped command with the same rules (ROUTE-2, ROUTE-4, ROUTE-6, CFG-10). The result is still a model reference only (ROUTE-8).
+- ROUTE-14 ROUTE-9 is unchanged for normal requests; SDD prompts carry file context (SDD-44).
+
+- AC6 (ROUTE-12): `/sdd init` never reaches routing. AC7 (ROUTE-13): resolving `/code` returns its first model; a disabled `/code` returns the ROUTE-4 reason.

@@ -32,3 +32,12 @@ Storing prompts/responses, analytics, cost, SQLite.
 - AC2 (HIST-3): no prompt text in the file.
 - AC3 (HIST-6,7): delete one leaves others intact; clear empties; interrupted write cannot corrupt.
 - AC4 (HIST-10): file with a bad line still lists the good ones.
+
+## V2 amendments (draft, not implemented; D-041)
+
+Apply only when SDD is built, after `v1.0.0` (D-022). V1 rules above stay unchanged for V1. New IDs never reuse old ones.
+
+- HIST-11 A record MAY have an optional `sdd` field holding the subcommand name (`roadmap`, `spec`, `spec-validate`, `implement`, `spec-review`, `review`). It is absent for normal requests. HIST-3 holds: no prompt, file or output text.
+- HIST-12 `command` for an SDD record is the routing command the subcommand was mapped to (SDD-37).
+
+- AC5 (HIST-11): an SDD run writes a line with `sdd` set; a normal request writes none; no file text appears.

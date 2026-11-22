@@ -44,3 +44,11 @@ Directory: `$AGENT_FACTORY_HOME` if set, else `~/.agent-factory/`.
 ```json
 {"id":"...","timestamp":"...","command":"/code","model":"provider-a/model-x","inputTokens":120,"outputTokens":340,"status":"success"}
 ```
+
+## V2 amendments (draft, not implemented; D-041)
+
+Apply only when SDD is built, after `v1.0.0` (D-022). V1 rules above stay unchanged for V1. New IDs never reuse old ones.
+
+- FILE-4 `strategies.json` MAY contain an `sdd` object (D-034). Keys are SDD subcommands that use a model: `roadmap`, `spec`, `spec-validate`, `implement`, `spec-review`, `review`; values are routing commands. Example: `"sdd": { "implement": "/code", "review": "/fast" }`. Still user-owned, never written by the tool.
+- FILE-5 Project files (`AGENTS.md`, `specs/**`, and source files under a feature's `modules`) are owned by the user and written only through approved proposals (SDD-35, SDD-46). They never contain API keys.
+- FILE-6 `history.jsonl` lines MAY carry an `sdd` field (HIST-11).
