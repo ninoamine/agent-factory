@@ -226,3 +226,22 @@ func TestHIST6_CommandParsingAndMutates(t *testing.T) {
 		}
 	})
 }
+
+func TestHIST11_SDDFieldOptional(t *testing.T) {
+	svc, st := newSvc(t)
+	r := rec(execution.StatusSuccess, ip(1), ip(2))
+	r.SDD = "implement"
+	if err := svc.Record(context.Background(), r); err != nil {
+		t.Fatal(err)
+	}
+	if err := svc.Record(context.Background(), rec(execution.StatusSuccess, ip(1), ip(2))); err != nil {
+		t.Fatal(err)
+	}
+	lines := strings.Split(strings.TrimSpace(string(st.data)), "\n")
+	if !strings.Contains(lines[0], `"sdd":"implement"`) || strings.Contains(lines[1], "sdd") || strings.Contains(string(st.data), "SECRET PROMPT") {
+		t.Fatalf("HIST-11: %v", lines)
+	}
+	if entries, warns, _ := svc.List(context.Background()); len(entries) != 2 || len(warns) != 0 {
+		t.Fatalf("HIST-11: lines with the sdd field must stay valid: %v %v", entries, warns)
+	}
+}

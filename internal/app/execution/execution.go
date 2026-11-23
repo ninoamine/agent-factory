@@ -99,6 +99,7 @@ type Record struct {
 	Status    Status
 	ErrorKind ErrorKind // set unless Status == StatusSuccess
 	Usage     Usage
+	SDD       string // /sdd subcommand for SDD runs, empty otherwise (HIST-11)
 }
 
 // Recorder is implemented by the history service (HIST-1).
@@ -116,12 +117,19 @@ type Service struct {
 // Run executes one routed decision (ARCH-10). It calls only the model chosen
 // by routing (EXEC-1) and sends only the stripped prompt (EXEC-7).
 func (s Service) Run(ctx context.Context, cfg configuration.Config, d routing.Decision, out Output) Record {
+	return s.RunSDD(ctx, cfg, d, "", out)
+}
+
+// RunSDD is Run for an SDD subcommand: d.Prompt carries the file context built
+// by SDD and is sent unchanged (EXEC-10). EXEC adds no history or context of
+// its own and does not enforce SDD limits (EXEC-11). sdd tags the history record.
+func (s Service) RunSDD(ctx context.Context, cfg configuration.Config, d routing.Decision, sdd string, out Output) Record {
 	if d.Kind != routing.Routed {
 		// Refused and tool-command decisions are never executed or recorded (ROUTE-4, ROUTE-7).
 		out.Error("nothing to execute: the input was not routed to a model")
 		return Record{}
 	}
-	rec := Record{Time: s.now(), Command: d.Command, Model: d.Model, Prompt: d.Prompt}
+	rec := Record{Time: s.now(), Command: d.Command, Model: d.Model, Prompt: d.Prompt, SDD: sdd}
 
 	adapter, modelID, err := s.resolve(cfg, d.Model)
 	if err != nil {

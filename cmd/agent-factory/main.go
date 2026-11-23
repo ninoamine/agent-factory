@@ -12,8 +12,11 @@ import (
 	"github.com/ninoamine/agent-factory/internal/app/execution"
 	"github.com/ninoamine/agent-factory/internal/app/history"
 	"github.com/ninoamine/agent-factory/internal/app/metadata"
+	"github.com/ninoamine/agent-factory/internal/app/sdd"
 	"github.com/ninoamine/agent-factory/internal/app/strategies"
 	"github.com/ninoamine/agent-factory/internal/cli"
+	"github.com/ninoamine/agent-factory/internal/infra/editor"
+	"github.com/ninoamine/agent-factory/internal/infra/gitcli"
 	"github.com/ninoamine/agent-factory/internal/infra/providers"
 	"github.com/ninoamine/agent-factory/internal/infra/storage"
 )
@@ -51,8 +54,21 @@ func run() error {
 		history:  hist,
 		suggest:  strategies.Service{Reader: files},
 	}
+	project, err := os.Getwd() // the project dir is the working directory at launch (SDD-30)
+	if err != nil {
+		return fmt.Errorf("locating the project directory: %w", err)
+	}
 	m := cli.New(b)
 	p := tea.NewProgram(m, tea.WithAltScreen())
+	b.sdd = &sdd.Service{
+		Dir:    project,
+		Files:  storage.ProjectFiles{},
+		Git:    gitcli.Git{},
+		Editor: editor.Editor{Suspend: p.ReleaseTerminal, Resume: p.RestoreTerminal}, // TUI-26
+		Runner: b.exec,
+		Config: func() (configuration.Config, func()) { return b.manager.BeginRequest() },
+		Getenv: os.Getenv,
+	}
 	m.SetSender(p.Send)
 	_, err = p.Run()
 	m.Wait() // let an interrupted request write its history record (EXEC-8)

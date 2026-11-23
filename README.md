@@ -45,8 +45,36 @@ Tool commands:
 | `/suggest <cost\|speed\|capability>` | show a suggested `strategies.json` |
 | `/refresh` | reload both files and refresh metadata |
 | `/history` | list runs; `/history delete <id>`; `/history clear` (asks to confirm) |
+| `/sdd` | spec-driven development in the current directory (see below) |
 
 Keys: Enter sends, PgUp/PgDn scroll, Ctrl+C cancels a running request (or exits when idle), Ctrl+D on an empty input exits.
+
+## Spec-driven development (`/sdd`)
+
+`/sdd` helps you build a product with specs. The project dir is the directory you launched `agent-factory` from. Run `/sdd` to list the subcommands.
+
+| Subcommand | What it does |
+|---|---|
+| `/sdd init` | creates `AGENTS.md` and a `specs/` skeleton from built-in templates; lists what it will create and skip, asks first, never overwrites; no model call |
+| `/sdd roadmap <input>` | updates `specs/roadmap.md` (and appends to `specs/decisions.md`) |
+| `/sdd spec <input>` | writes a new feature spec with status `draft` |
+| `/sdd spec <id> <input>` | changes an existing spec and resets it to `draft` |
+| `/sdd spec-validate <id>` | checks a spec; on `pass` proposes status `ready` |
+| `/sdd implement <id>` | writes code and tests under the feature's `modules` folders; only for a `ready` feature |
+| `/sdd spec-review <id>` | checks the code against the spec; on `pass` proposes status `implemented` |
+| `/sdd review` | reviews the uncommitted changes (`git diff HEAD` plus untracked files); writes nothing |
+
+`<input>` is free text, or a single file path (read only). `<id>` is a feature id from `specs/index.md`.
+
+Every file change needs your approval. The tool shows each proposed file with a diff, then you answer `yes`, `no`, `redo [feedback]` or `edit` (opens the proposal in `$VISUAL` or `$EDITOR`). Nothing is written before `yes`, files are written atomically, deletions and paths outside the allowed ones for that subcommand are rejected, and `models.json` and `strategies.json` are never written. Only one `/sdd` subcommand runs at a time. Each model run is one request on one model and one line in `history.jsonl` (with an `sdd` field and no text).
+
+Each subcommand uses a routing command. Defaults: `implement` uses `/code`; the others use `/reason`. Override them with an optional `sdd` object in your `strategies.json`:
+
+```json
+"sdd": { "implement": "/code", "review": "/fast" }
+```
+
+Keys: `roadmap`, `spec`, `spec-validate`, `implement`, `spec-review`, `review`. Values: `/fast`, `/code`, `/reason`, `/creative`. A prompt may hold at most 400 KB of text; the tool refuses before calling the model and names the largest files. Files ignored by `.gitignore` and binary files are never sent. The only external commands the tool runs are `git` for `/sdd review` and your editor for `edit`.
 
 ## Providers
 

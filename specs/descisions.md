@@ -46,6 +46,7 @@ Short entries. Check here before asking the user again. Status: `decided` | `pro
 | D-040 | SDD open questions resolved as proposed: full-file proposals only; 400 KB prompt cap; no direct re-implement of an `implemented` spec; `/sdd spec <id> <input>` changes a spec via `change.md`, resets it to `draft`, may append to decisions; `implement` writes only inside `modules` (tests included) | decided |
 | D-041 | V2 changes to implemented V1 specs are added as a `V2 amendments` section at the end of each file, with new rule IDs; V1 rules stay untouched until V2 is built. `/refresh` is refused during an SDD run (REFRESH-10) | decided |
 | D-042 | V2 scope is SDD only. Default model, automatic classification, cost tracking and usage recommendations move to later candidates; D-023 and D-026 are superseded, D-027 is dropped. SDD spec is `ready` (user reviewed) | decided |
+| D-043 | SDD implementation refinements, applied to the SDD spec while building it: editor run for `edit` is allowed (ARCH-12, SEC-6, SDD-50, SDD-58); `.gitignore` read by the tool, not git (SDD-42); proposal format and `VERDICT:` marker fixed (SDD-45, SDD-54); `git ls-files --others --exclude-standard` for untracked files and refusal in a repo with no commit (SDD-56); cap is 400×1024 bytes (SDD-62). The tool alone sets statuses: on `pass` only the status changes, other index rows must stay as on disk, `models.json`/`strategies.json` names are rejected before approval (SDD-52, SDD-54, SDD-59) | decided |
  
 ## Template for new entries
  

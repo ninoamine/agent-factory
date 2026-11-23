@@ -122,3 +122,17 @@ func availableList(cfg configuration.Config) string {
 	}
 	return strings.Join(out, ", ")
 }
+
+// Resolve turns a routing command into its model without a prompt (ROUTE-13).
+// It applies the same rules as Route (ROUTE-2, ROUTE-4, ROUTE-6, CFG-10) and
+// returns a model reference only (ROUTE-8). A refusal carries the ROUTE-4 reason.
+func Resolve(cfg configuration.Config, cmd domain.RoutingCommand) Decision {
+	if _, ok := parseCommand(string(cmd)); !ok {
+		return Decision{Kind: Refused, Message: fmt.Sprintf("unknown command %q", string(cmd))}
+	}
+	if reason, bad := checkUsable(cfg, cmd); bad {
+		return Decision{Kind: Refused, Message: reason}
+	}
+	model := cfg.Strategies.Commands[string(cmd)].Models[0]
+	return Decision{Kind: Routed, Command: cmd, Model: domain.ModelRef(model)}
+}

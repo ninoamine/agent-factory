@@ -32,9 +32,9 @@ Methods: `identify()`, `fetchMetadata()` (optional), `execute(prompt)`, `stream(
 cmd/agent-factory/main.go
 internal/
   cli/       app.go, commands/, components/              (layer: cli)
-  app/       configuration/ models/ metadata/ strategies/ routing/ execution/ history/   (layer: application)
+  app/       configuration/ models/ metadata/ strategies/ routing/ execution/ history/ sdd/   (layer: application)
   domain/    model.go provider.go strategy.go routingcommand.go request.go
-  infra/     providers/ storage/ logging/                (layer: infrastructure)
+  infra/     providers/ storage/ logging/ editor/ gitcli/                (layer: infrastructure)
 test/        integration tests (unit tests live beside code as *_test.go)
 examples/    sample models.json, strategies.json (no real keys)
 ```
@@ -50,5 +50,5 @@ Interfaces are defined in the consuming package (application), implemented in `i
 Apply only when SDD is built, after `v1.0.0` (D-022). V1 rules above stay unchanged for V1. New IDs never reuse old ones.
 
 - ARCH-11 Writes outside the config dir MUST go only through one approved-proposal writer in the application layer (SDD-46..51). No other component writes project files. ARCH-7 is unchanged.
-- ARCH-12 The only external process the tool may run is `git diff HEAD` (and listing untracked files) for `/sdd review` (SDD-56, D-037). It MUST sit behind an application-defined interface implemented in infrastructure, and MUST NOT use a shell.
+- ARCH-12 The only external process the tool may run is `git diff HEAD` (and listing untracked files) for `/sdd review`, plus the user's editor for `/sdd` `edit` (SDD-50) (SDD-56, D-037). It MUST sit behind an application-defined interface implemented in infrastructure, and MUST NOT use a shell.
 - ARCH-13 The `sdd` application package MUST resolve models through ROUTE and run them through EXEC (ARCH-5, ARCH-10). It MUST NOT import provider code.

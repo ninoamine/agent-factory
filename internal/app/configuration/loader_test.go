@@ -247,3 +247,29 @@ func TestAssignedCommands(t *testing.T) { // supports TUI-9
 		t.Fatal("no strategies: want none")
 	}
 }
+
+func TestCFG11_SDDObject(t *testing.T) {
+	loadStrat := func(sdd string) configuration.Result {
+		dir := t.TempDir()
+		write(t, dir, "strategies.json", `{"strategy":"cost","commands":{}`+sdd+`}`, 0o600)
+		return load(t, dir)
+	}
+	if res := loadStrat(`,"sdd":{"review":"/fast"}`); len(res.Problems) != 0 || res.Config.Strategies.SDD["review"] != "/fast" {
+		t.Fatalf("CFG-11 valid sdd: %v", res.Problems)
+	}
+	if res := loadStrat(""); len(res.Problems) != 0 || res.Config.Strategies == nil {
+		t.Fatalf("CFG-11 absent sdd must load: %v", res.Problems)
+	}
+	if res := loadStrat(`,"sdd":{"implement":"/disabled-ok"}`); len(res.Problems) == 0 {
+		t.Fatal("CFG-11: a non-routing value must be an error")
+	}
+	for _, sdd := range []string{`,"sdd":{"deploy":"/code"}`, `,"sdd":{"spec":"/nope"}`} {
+		res := loadStrat(sdd)
+		if len(res.Problems) != 1 || res.Problems[0].File != "strategies.json" || !strings.HasPrefix(res.Problems[0].Path, "sdd.") {
+			t.Errorf("CFG-11 %s: want one error naming file and field, got %v", sdd, res.Problems)
+		}
+	}
+	if res := loadStrat(`,"sdd":{"init":"/code"}`); len(res.Problems) == 0 {
+		t.Fatal("CFG-11: init does not use a model and is not a key")
+	}
+}

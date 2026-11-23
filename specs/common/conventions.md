@@ -52,5 +52,5 @@ Apply only when SDD is built, after `v1.0.0` (D-022). V1 rules above stay unchan
 
 - CONV-7 Files written into the user's project (SDD) MUST be written atomically (FILE-2), only after path checks (SDD-46: inside the project dir after resolving `..` and symlinks, no `.git/`, no deletion).
 - TEST-5 Add a test proving SDD writes only allowed paths and never `models.json` or `strategies.json` (SDD-59, AC18).
-- SEC-6 SDD MUST NOT send files that match the project's ignore rules or binary files to a model (SDD-42), and MUST NOT run commands other than ARCH-12's.
+- SEC-6 SDD MUST NOT send files that match the project's ignore rules or binary files to a model (SDD-42), and MUST NOT run commands other than ARCH-12's (git, and the editor for `edit`).
 - DOC-14 When SDD is built, the README MUST document `/sdd`, the `sdd` object in `strategies.json`, and that file writes need approval (DOC-1, DOC-2).
