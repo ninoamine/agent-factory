@@ -9,6 +9,7 @@ import (
 	"github.com/ninoamine/agent-factory/internal/app/history"
 	"github.com/ninoamine/agent-factory/internal/app/metadata"
 	"github.com/ninoamine/agent-factory/internal/app/routing"
+	"github.com/ninoamine/agent-factory/internal/app/sdd"
 	"github.com/ninoamine/agent-factory/internal/app/strategies"
 	"github.com/ninoamine/agent-factory/internal/cli"
 )
@@ -26,6 +27,7 @@ type backend struct {
 	registry interface{ Configure(configuration.Config) }
 
 	manager *configuration.Manager
+	sdd     *sdd.Service // the /sdd workflow (SDD); nil in tests that do not use it
 }
 
 // Load loads the configuration, generates metadata if absent, and builds the
@@ -85,6 +87,9 @@ func (b *backend) Suggest(ctx context.Context, args string) (string, error) {
 }
 
 func (b *backend) Refresh(ctx context.Context) (configuration.RefreshOutcome, error) {
+	if b.sdd != nil && b.sdd.Active() != "" { // REFRESH-10
+		return configuration.RefreshOutcome{}, fmt.Errorf("/refresh is refused while /sdd %s is active", b.sdd.Active())
+	}
 	return b.manager.Refresh(ctx)
 }
 
@@ -93,4 +98,16 @@ func (b *backend) HistoryMutates(args string) bool { return history.Mutates(args
 // History runs a /history command (HIST-5, HIST-6).
 func (b *backend) History(ctx context.Context, args string) (cli.HistoryReply, error) {
 	return b.history.Command(ctx, args)
+}
+
+func (b *backend) SDDKind(args string) string { return sdd.ModelSubcommand(args) }
+
+// SDD runs a /sdd command (SDD-31). Model runs take the active configuration
+// through the manager so /refresh waits for them (REFRESH-9).
+func (b *backend) SDD(ctx context.Context, args string, out execution.Output) (cli.SDDReply, error) {
+	return b.sdd.Run(ctx, args, out)
+}
+
+func (b *backend) SDDAnswer(ctx context.Context, line string, out execution.Output) (cli.SDDReply, error) {
+	return b.sdd.Answer(ctx, line, out)
 }

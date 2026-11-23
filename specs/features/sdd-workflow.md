@@ -1,9 +1,9 @@
 ---
 id: SDD
-status: ready
+status: implemented
 version: V2
 depends_on: [CFG, ROUTE, EXEC, HIST, TUI]
-modules: [internal/app/sdd, internal/cli]
+modules: [internal/app/sdd, internal/cli, internal/infra/editor, internal/infra/gitcli, internal/infra/storage]
 ---
 # SDD workflow
 
@@ -41,13 +41,13 @@ Rules SDD-1..29 (earlier pipeline design) are removed and their IDs are not reus
   - `spec-validate`: the feature file, its `depends_on` feature files, `specs/index.md`, `specs/roadmap.md`, `specs/decisions.md`, `specs/common/*.md`.
   - `implement` and `spec-review`: `AGENTS.md`, the feature file, its `depends_on` feature files, `specs/common/*.md`, and the source files under the feature's `modules` folders (SDD-42).
   - `review`: `AGENTS.md`, `specs/common/conventions.md`, the uncommitted diff (SDD-56), and the feature files whose `modules` contain a changed file.
-- SDD-42 Source files MUST be limited to the `modules` folders, MUST exclude `.git/`, binary files and git-ignored files, and MUST NOT include files outside the project dir.
+- SDD-42 Source files (text files: a file with a NUL byte in its first 8000 bytes is binary) MUST be limited to the `modules` folders, MUST exclude `.git/`, binary files and git-ignored files (rules from the root `.gitignore`, `.git/info/exclude` and nested `.gitignore` files, read by the tool without running git, SDD-58; the global excludes file is not read), and MUST NOT include files outside the project dir.
 - SDD-43 If the context exceeds the size cap (SDD-62), MUST refuse before calling the model, naming the largest contributing files.
 - SDD-44 Normal routing requests stay independent (ROUTE-9, EXEC-7). Only SDD prompts carry file context.
 
 ### Proposals and approval
 
-- SDD-45 A model's file changes MUST be returned in a fixed proposal format (full file content per path, SDD-61; exact format set at implementation). If the output cannot be parsed, MUST show it raw and write nothing.
+- SDD-45 A model's file changes MUST be returned in a fixed proposal format (full file content per path, SDD-61). Format: for each file `=== FILE: <path> ===`, the full content, then `=== END FILE ===`; a deletion request is `=== DELETE: <path> ===` (rejected, SDD-47). Text outside the blocks is ignored. If the output has no block, has an unclosed block, or cannot be parsed, MUST show it raw and write nothing.
 - SDD-46 Each subcommand MAY only write its allowed paths: `roadmap` → `specs/roadmap.md`, `specs/decisions.md`; `spec` (new) → one new `specs/features/<name>.md`, `specs/index.md`; `spec <id>` (change) → that feature file, `specs/index.md`, `specs/decisions.md` (append only, SDD-64); `spec-validate` → the feature file, `specs/index.md`; `implement` → files under the feature's `modules` folders, tests included (SDD-65); `spec-review` → the feature file, `specs/index.md`; `review` → nothing. A proposal touching any other path, a path outside the project dir (after resolving `..` and symlinks), or `.git/` MUST be rejected whole, with the offending paths shown.
 - SDD-47 MUST NOT delete files. A proposal requesting a deletion MUST be rejected whole.
 - SDD-48 Before writing, MUST show each proposed file as new or changed, with a diff against its current content, then ask for approval.
@@ -57,29 +57,29 @@ Rules SDD-1..29 (earlier pipeline design) are removed and their IDs are not reus
 
 ### Status lifecycle
 
-- SDD-52 Feature statuses are `draft`, `ready`, `implemented`, kept in both the feature front matter and `specs/index.md`. Status edits MUST be made by the tool itself (not taken from model text) and included in the proposal (SDD-48).
-- SDD-53 `spec` MUST create the feature with status `draft`, a unique id not already in the index, and a matching index row. A proposal with a duplicate id or invalid front matter MUST be rejected.
-- SDD-54 The model's verdict for `spec-validate`, `spec-review` and `review` MUST be read from a fixed marker (`pass` or `fail`); a missing or unreadable marker counts as `fail`.
-  - `spec-validate`: `pass` → propose status `ready`. `fail` → show the problems and propose a corrected spec that stays `draft`.
+- SDD-52 Feature statuses are `draft`, `ready`, `implemented`, kept in both the feature front matter and `specs/index.md`. Status edits MUST be made by the tool itself (not taken from model text) and included in the proposal (SDD-48). In `specs/index.md` only the target feature's row may change (or be added by `spec`, with its file matching the feature file); a proposal that changes, adds or removes any other row MUST be rejected whole.
+- SDD-53 `spec` MUST create the feature with status `draft`, a unique id not already in the index, and a matching index row. A proposal with a duplicate id or invalid front matter MUST be rejected. Front matter is invalid when the `---` block is missing or `id` is missing or contains whitespace or `|`.
+- SDD-54 The model's verdict for `spec-validate`, `spec-review` and `review` MUST be read from the last line of the model output of the form `VERDICT: pass` or `VERDICT: fail` (case-insensitive; the last non-empty line); a missing or unreadable marker counts as `fail`.
+  - `spec-validate`: `pass` → propose status `ready`, changing only the status lines (the model's spec text is not written). `fail` → show the problems and propose a corrected spec that stays `draft`.
   - `spec-review`: `pass` → propose status `implemented`. `fail` → show the gaps, write nothing.
   - `review`: show the verdict and findings, write nothing.
 - SDD-55 `implement` MUST be refused unless the feature's status is `ready`. On an `implemented` feature, the refusal MUST say to change the spec first (SDD-63, SDD-64).
 
 ### Review
 
-- SDD-56 `review` MUST get the diff by running `git diff HEAD` directly (no shell) in the project dir, plus untracked files that are not ignored. It MUST NOT run any other command. If the dir is not a git repo, MUST refuse. With no changes, MUST say so and not call the model.
+- SDD-56 `review` MUST get the diff by running `git diff HEAD` directly (no shell) in the project dir, plus untracked files that are not ignored. It MUST NOT run any other command (the untracked listing is `git ls-files --others --exclude-standard`, ARCH-12). If the dir is not a git repo, or the repo has no commit yet, MUST refuse with a clear message and not call the model. With no changes, MUST say so and not call the model.
 
 ### History and safety
 
 - SDD-57 Every model run MUST produce one HIST record (EXEC-8) with an extra field `sdd` holding the subcommand. No prompt, file or output text is stored (HIST-3).
-- SDD-58 MUST NOT run any command except SDD-56's git call. MUST NOT commit, stage or touch git state.
-- SDD-59 MUST NOT write `models.json` or `strategies.json` (ARCH-7), or any file outside SDD-36/SDD-46 paths except `history.jsonl` and the SDD-50 temp file.
+- SDD-58 MUST NOT run any command except SDD-56's git call and the user's editor for `edit` (SDD-50, started without a shell). MUST NOT commit, stage or touch git state.
+- SDD-59 MUST NOT write `models.json` or `strategies.json` (ARCH-7; a proposal naming such a file is rejected before the approval prompt), or any file outside SDD-36/SDD-46 paths except `history.jsonl` and the SDD-50 temp file.
 - SDD-60 Command handling, context building, proposal parsing, path checks and status edits MUST live in the application layer (ARCH-3). The editor and git calls MUST sit behind interfaces so tests use fakes (ARCH-8).
 
 ### Limits and spec changes (D-040)
 
-- SDD-61 Proposals MUST contain full file content only; diffs or patches MUST NOT be accepted (rejected as unparsable, SDD-45). A file whose current content alone exceeds the size cap cannot be changed by `implement`; the refusal names it.
-- SDD-62 The size cap is 400 KB of text per prompt (instruction, context and input together). No per-model limit in V2.
+- SDD-61 Proposals MUST contain full file content only; diffs or patches MUST NOT be accepted (rejected as unparsable, SDD-45). A file whose current content alone exceeds the size cap cannot be changed by `implement`; the refusal names it. The same refusal applies to `spec-review`, which sends the same source files.
+- SDD-62 The size cap is 400 KB (400 × 1024 bytes) of text per prompt (instruction, context and input together, counting a small fixed overhead per labeled part). No per-model limit in V2.
 - SDD-63 Re-implementing an `implemented` feature MUST NOT be possible directly; the spec is changed first (SDD-64), which resets it to `draft`, then validated again (`spec-validate`) to return to `ready`.
 - SDD-64 `/sdd spec <id> <input>` MUST be treated as a change to an existing feature when the first token exactly matches (case-sensitive) an id in `specs/index.md` and input follows. It MUST send the feature file, its `depends_on` feature files, `specs/templates/change.md`, `specs/index.md`, `specs/decisions.md`, `specs/common/*.md` and the input. The proposal MUST keep the feature id and MUST NOT renumber or reuse rule IDs; the tool MUST reset the status to `draft` in the front matter and the index (SDD-52). A `specs/decisions.md` change MUST only append lines; any other edit to it rejects the proposal whole.
 - SDD-65 `implement` MUST NOT write tests or any file outside the feature's `modules` folders (SDD-46); tests live in those folders.
@@ -117,7 +117,7 @@ Tests use a temp project dir, a fake provider, a fake editor and a fake git (TES
 - AC12 (SDD-54): `spec-validate AUTH` with verdict `pass` proposes `ready` in both places. With `fail`, it shows the problems and the proposed spec stays `draft`. With no marker, it is treated as `fail`.
 - AC13 (SDD-54): `spec-review AUTH` with `pass` proposes `implemented`; with `fail`, nothing is written.
 - AC14 (SDD-55): `/sdd implement AUTH` on a `draft` spec is refused.
-- AC15 (SDD-56): with the fake git returning no diff, `review` calls no model. Outside a git repo, it is refused. With a diff touching `src/auth/x.go`, the prompt includes the AUTH spec. Nothing is written.
+- AC15 (SDD-56): with the fake git returning no diff, `review` calls no model. Outside a git repo, or in a repo with no commit, it is refused. With a diff touching `src/auth/x.go`, the prompt includes the AUTH spec. Nothing is written.
 - AC16 (SDD-40): while `/sdd spec x` streams, `/sdd review` and `/code hi` are refused, and `/models` runs.
 - AC17 (SDD-57): three SDD model runs produce three history lines with `sdd` set and no file or prompt text.
 - AC18 (SDD-59): after a full init → spec → validate → implement → spec-review cycle, `models.json` and `strategies.json` are byte-identical, and only allowed paths changed in the project dir.

@@ -15,7 +15,7 @@ const (
 var RoutingCommands = []RoutingCommand{CmdFast, CmdCode, CmdReason, CmdCreative}
 
 // ToolCommands control the app and are never routed (ROUTE-7).
-var ToolCommands = []string{"/refresh", "/suggest", "/models", "/history", "/help"}
+var ToolCommands = []string{"/refresh", "/suggest", "/models", "/history", "/help", "/sdd"}
 
 // ModelRef identifies a model by its id in models.json.
 type ModelRef string

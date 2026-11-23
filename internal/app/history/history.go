@@ -40,6 +40,7 @@ type Entry struct {
 	InputTokens  *int   `json:"inputTokens"`
 	OutputTokens *int   `json:"outputTokens"`
 	Status       string `json:"status"`
+	SDD          string `json:"sdd,omitempty"` // HIST-11: subcommand name only, never text
 }
 
 // Validate checks an entry read from disk (CONV-5, HIST-2).
@@ -73,6 +74,7 @@ func (s *Service) Record(ctx context.Context, r execution.Record) error {
 		InputTokens:  r.Usage.Input,
 		OutputTokens: r.Usage.Output,
 		Status:       string(r.Status),
+		SDD:          r.SDD,
 	}
 	if err := e.Validate(); err != nil {
 		return fmt.Errorf("recording history entry: %w", err)

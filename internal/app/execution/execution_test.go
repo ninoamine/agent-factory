@@ -275,3 +275,30 @@ func TestEXEC3_ProviderReportedInterruptNeedsNoCancelNotice(t *testing.T) {
 		t.Fatalf("status=%s notices=%v", rec.Status, o.notices)
 	}
 }
+
+func TestEXEC10_SDDPromptSentUnchangedAndTagged(t *testing.T) {
+	a := &fakeAdapter{resp: Response{Text: "ok"}}
+	h := &history{}
+	svc := Service{Providers: resolver{"p1": a, "p2": a}, History: h}
+	d := dec("m1")
+	d.Prompt = "instruction\n\n=== file.go ===\ncontext"
+	rec := svc.RunSDD(context.Background(), cfg(), d, "implement", &out{})
+	if a.calls[0] != "m1|"+d.Prompt || rec.SDD != "implement" || h.recs[0].SDD != "implement" {
+		t.Fatalf("EXEC-10: %v %+v", a.calls, h.recs)
+	}
+	svc.Run(context.Background(), cfg(), dec("m1"), &out{})
+	if a.calls[1] != "m1|fix this" || h.recs[1].SDD != "" {
+		t.Fatalf("EXEC-10: a normal request sends only the stripped prompt: %v", a.calls)
+	}
+}
+
+func TestEXEC11_ExecDoesNotEnforceSDDLimits(t *testing.T) {
+	a := &fakeAdapter{resp: Response{Text: "ok"}}
+	svc := Service{Providers: resolver{"p1": a, "p2": a}, History: &history{}}
+	d := dec("m1")
+	d.Prompt = strings.Repeat("x", 500*1024) // the cap check belongs to SDD (SDD-43)
+	svc.RunSDD(context.Background(), cfg(), d, "implement", &out{})
+	if len(a.calls) != 1 || len(a.calls[0]) < 500*1024 {
+		t.Fatal("EXEC-11: EXEC must send the prompt SDD gives it")
+	}
+}

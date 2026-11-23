@@ -182,6 +182,7 @@ var toolHelp = map[string]string{
 	"/models":  "list configured models and their commands",
 	"/history": "list runs; /history delete <id>; /history clear",
 	"/help":    "show this help",
+	"/sdd":     "spec-driven development: init, roadmap, spec, spec-validate, implement, spec-review, review (/sdd lists them)",
 }
 
 // helpLines lists all tool commands and routing commands (TUI-8).

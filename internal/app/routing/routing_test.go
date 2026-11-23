@@ -170,3 +170,30 @@ func TestROUTE11_CaseSensitive(t *testing.T) {
 		}
 	}
 }
+
+func TestROUTE12_SDDIsToolCommand(t *testing.T) {
+	d := Route(cfg(), "/sdd init")
+	if d.Kind != ToolCommand || d.Tool != "/sdd" {
+		t.Fatalf("ROUTE-12: %+v", d)
+	}
+}
+
+func TestROUTE13_ResolveWithoutPrompt(t *testing.T) {
+	c := cfg()
+	if d := Resolve(c, domain.CmdCode); d.Kind != Routed || d.Model != "m2" || d.Prompt != "" {
+		t.Fatalf("ROUTE-13: first model expected: %+v", d)
+	}
+	for _, tc := range []struct {
+		cmd  domain.RoutingCommand
+		want string
+	}{{domain.CmdReason, "disabled"}, {domain.CmdCreative, "no model assigned"}, {"/nope", "unknown"}} {
+		d := Resolve(c, tc.cmd)
+		if d.Kind != Refused || !strings.Contains(d.Message, tc.want) {
+			t.Errorf("ROUTE-13 %s: %+v", tc.cmd, d)
+		}
+	}
+	c.Unusable["/fast"] = "model gone"
+	if d := Resolve(c, domain.CmdFast); d.Kind != Refused {
+		t.Errorf("ROUTE-13: CFG-10 unusable command must be refused: %+v", d)
+	}
+}

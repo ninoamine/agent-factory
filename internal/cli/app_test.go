@@ -17,6 +17,7 @@ import (
 	"github.com/ninoamine/agent-factory/internal/app/execution"
 	"github.com/ninoamine/agent-factory/internal/app/metadata"
 	"github.com/ninoamine/agent-factory/internal/app/routing"
+	"github.com/ninoamine/agent-factory/internal/app/sdd"
 	"github.com/ninoamine/agent-factory/internal/app/strategies"
 )
 
@@ -89,6 +90,11 @@ type fakeBackend struct {
 	historyCalls atomic.Int32
 	cleared      atomic.Bool
 	historyGate  chan struct{} // when set, History blocks until it is closed
+
+	sddMu      sync.Mutex
+	sddCalls   []string
+	sddAnswers []string
+	sddGate    chan struct{} // when set, SDD blocks (after streaming) until it is closed
 }
 
 func fixtureConfig() configuration.Config {
@@ -168,6 +174,52 @@ func (b *fakeBackend) History(ctx context.Context, args string) (HistoryReply, e
 
 func (b *fakeBackend) HistoryMutates(args string) bool {
 	return strings.HasPrefix(args, "delete") || strings.HasPrefix(args, "clear")
+}
+
+func (b *fakeBackend) SDDKind(args string) string { return sdd.ModelSubcommand(args) }
+
+// SDD fakes /sdd: init asks a confirmation, others stream and wait for approval.
+func (b *fakeBackend) SDD(ctx context.Context, args string, out execution.Output) (SDDReply, error) {
+	b.sddMu.Lock()
+	b.sddCalls = append(b.sddCalls, args)
+	b.sddMu.Unlock()
+	switch {
+	case strings.HasPrefix(args, "init"):
+		return SDDReply{Confirm: &Confirmation{Prompt: "SDD init will create files. Create them? (yes/no)",
+			Run: func(context.Context) ([]string, error) { return []string{"created specs/index.md"}, nil }}}, nil
+	case args == "":
+		return SDDReply{Lines: []string{"SDD subcommands: init, roadmap"}}, nil
+	}
+	out.Chunk("proposal-stream")
+	if b.sddGate != nil {
+		select {
+		case <-b.sddGate:
+		case <-ctx.Done():
+			return SDDReply{Lines: []string{"nothing was written"}}, nil
+		}
+	}
+	return SDDReply{Lines: []string{"new file: specs/features/x.md\n+ hello\nWrite these files? valid answers: yes | no | redo [feedback] | edit"}, Waiting: true}, nil
+}
+
+func (b *fakeBackend) SDDAnswer(ctx context.Context, line string, out execution.Output) (SDDReply, error) {
+	b.sddMu.Lock()
+	b.sddAnswers = append(b.sddAnswers, line)
+	b.sddMu.Unlock()
+	switch strings.Fields(line)[0] {
+	case "maybe":
+		return SDDReply{Lines: []string{"valid answers: yes | no | redo [feedback] | edit"}, Waiting: true}, nil
+	case "edit":
+		return SDDReply{Lines: []string{"edited proposal shown again"}, Waiting: true}, nil
+	case "yes":
+		return SDDReply{Lines: []string{"written: specs/features/x.md"}}, nil
+	}
+	return SDDReply{Lines: []string{"discarded; nothing was written"}}, nil
+}
+
+func (b *fakeBackend) answers() []string {
+	b.sddMu.Lock()
+	defer b.sddMu.Unlock()
+	return append([]string(nil), b.sddAnswers...)
 }
 
 // ---- harness: drives the model without a terminal ----
@@ -824,4 +876,110 @@ func TestTUI17_WaitBlocksUntilRequestFinishes(t *testing.T) {
 			t.Fatal("Wait did not return after the request finished")
 		}
 	})
+}
+
+func TestTUI24_HelpListsSDD(t *testing.T) { // AC18
+	h := ready(t, newBackend(newAdapter()))
+	h.send("/help")
+	h.settle()
+	for _, want := range []string{"/sdd", "init", "spec-validate", "implement", "spec-review", "review"} {
+		if !strings.Contains(h.all(), want) {
+			t.Errorf("TUI-24: /help lacks %q", want)
+		}
+	}
+}
+
+func TestTUI25_26_ApprovalPrompt(t *testing.T) { // AC19
+	b := newBackend(newAdapter())
+	h := ready(t, b)
+	h.send("/sdd spec add x")
+	h.waitFor("approval prompt", func() bool { return h.m.approval })
+	if !strings.Contains(h.all(), "+ hello") || !strings.Contains(h.all(), "yes | no | redo [feedback] | edit") {
+		t.Fatalf("TUI-25: diff and the four answers expected:\n%s", h.all())
+	}
+	h.send("maybe") // an invalid answer re-shows the answers and is never dispatched as a command
+	h.waitFor("re-shown", func() bool { return len(b.answers()) == 1 && h.m.approval })
+	h.send("edit") // TUI-26: handled by the application behind the editor interface
+	h.waitFor("edit", func() bool { return len(b.answers()) == 2 && h.m.approval })
+	h.send("/models") // TUI-25: the answer is never dispatched as a command
+	h.waitFor("answer", func() bool { return len(b.answers()) == 3 })
+	h.settle()
+	if b.configCalls.Load() != 0 {
+		t.Fatal("TUI-25: /models typed at the prompt must not run")
+	}
+	h.waitFor("discarded", func() bool { return !h.m.approval && h.m.sdd == "" })
+	if !strings.Contains(h.all(), "nothing was written") {
+		t.Fatalf("an unknown answer is handled by the application:\n%s", h.all())
+	}
+}
+
+func TestTUI25_CtrlCAnswersNoAndKeepsRunning(t *testing.T) { // AC19
+	b := newBackend(newAdapter())
+	h := ready(t, b)
+	h.send("/sdd implement AUTH")
+	h.waitFor("approval prompt", func() bool { return h.m.approval })
+	h.key(tea.KeyCtrlC)
+	h.waitFor("no answered", func() bool { return len(b.answers()) == 1 && h.m.sdd == "" })
+	if b.answers()[0] != "no" || h.m.Quitting() {
+		t.Fatalf("TUI-25: Ctrl+C answers no and does not exit: %v", b.answers())
+	}
+}
+
+func TestTUI27_BusyWhileSDDRunsOrWaits(t *testing.T) { // AC20
+	a := newAdapter()
+	b := newBackend(a)
+	b.sddGate = make(chan struct{})
+	h := ready(t, b)
+	h.send("/sdd spec x")
+	h.waitScreen("proposal-stream")
+	for _, cmd := range []string{"/code hi", "/sdd review", "/history clear", "/history delete a", "/refresh"} {
+		h.send(cmd)
+	}
+	h.send("/models")
+	h.settle()
+	if a.calls.Load() != 0 || b.historyCalls.Load() != 0 || b.refreshCalls.Load() != 0 {
+		t.Fatal("TUI-27: nothing refused may reach the application")
+	}
+	b.sddMu.Lock()
+	n := len(b.sddCalls)
+	b.sddMu.Unlock()
+	if n != 1 {
+		t.Fatalf("TUI-27: only one /sdd call expected, got %d", n)
+	}
+	if got := strings.Count(h.all(), "error: "); got < 5 {
+		t.Fatalf("TUI-27: five refusals expected, got %d:\n%s", got, h.all())
+	}
+	if !strings.Contains(h.all(), "/sdd spec") || b.configCalls.Load() == 0 {
+		t.Fatalf("TUI-27: refusals name the active subcommand and /models still runs:\n%s", h.all())
+	}
+	close(b.sddGate)
+	h.waitFor("approval", func() bool { return h.m.approval })
+	if h.m.sdd != "spec" {
+		t.Fatal("TUI-27: a proposal waiting for approval keeps the busy state")
+	}
+	h.send("/code hi") // at the approval prompt this line is the answer, never a request
+	h.waitFor("answered", func() bool { return len(b.answers()) == 1 && h.m.sdd == "" })
+	if a.calls.Load() != 0 || b.answers()[0] != "/code hi" {
+		t.Fatal("TUI-25: the answer must not be dispatched as a command")
+	}
+}
+
+func TestTUI28_InitUsesConfirmationPrompt(t *testing.T) {
+	t.Run("TUI-28 init uses the confirmation prompt", testTUI28)
+}
+
+func testTUI28(t *testing.T) {
+	b := newBackend(newAdapter())
+	h := ready(t, b)
+	h.send("/sdd init")
+	h.waitFor("confirmation", func() bool { return h.m.confirm != nil })
+	h.send("yes")
+	h.waitScreen("created specs/index.md")
+	if h.m.sdd != "" {
+		t.Fatal("init does not hold the busy state")
+	}
+}
+
+func TestSDD40_Label(t *testing.T) {
+	t.Run("SDD-40 one subcommand at a time; routing, refresh and history mutations refused", TestTUI27_BusyWhileSDDRunsOrWaits)
 }
